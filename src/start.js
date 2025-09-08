@@ -97,8 +97,18 @@ app.post("/users", usersController.createUser);
 
 app.post("/members", membersController.createMember);
 app.put("/members", membersController.updateMember);
-app.put("/members", membersController.updateMember);
+app.put("/role", membersController.changeRole);
 
+app.post("/payments", paymentsController.createPayment);
+app.put("/payments", paymentsController.updatePayment);
+app.delete("/payments/:paymentId", paymentsController.deletePayment);
+
+app.post("/rooms", roomsController.createRoom);
+app.put("/rooms", roomsController.updateRoom);
+
+app.post("/shares", sharesController.createShare);
+app.put("/shares", sharesController.updateShare);
+app.delete("/shares/:shareId", sharesController.deleteShare);
 
 
 
