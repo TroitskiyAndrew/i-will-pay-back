@@ -95,14 +95,17 @@ app.use(telegramInitDataMiddleware);
 app.get("/auth", usersController.auth);
 app.post("/users", usersController.createUser);
 
+app.get("/members/:roomId", membersController.getMembers);
 app.post("/members", membersController.createMember);
 app.put("/members", membersController.updateMember);
 app.put("/role", membersController.changeRole);
 
+app.get("/payments/:roomId", paymentsController.getPayments);
 app.post("/payments", paymentsController.createPayment);
 app.put("/payments", paymentsController.updatePayment);
 app.delete("/payments/:paymentId", paymentsController.deletePayment);
 
+app.get("/rooms", roomsController.getRooms);
 app.post("/rooms", roomsController.createRoom);
 app.put("/rooms", roomsController.updateRoom);
 

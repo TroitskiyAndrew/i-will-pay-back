@@ -228,6 +228,19 @@ const deleteDocumentsByQuery = async (collectionName, query) => {
     return result;
 }
 
+const aggregate = async (collectionName, query) => {
+    let result;
+    try {
+        await connectClient();
+        const collection = client.db('i-will-pay').collection(collectionName);
+        result = await collection.aggregate(query);
+    } catch (err) {
+        console.log('Operation aggregate failed', err);
+        result = null;
+    } 
+    return result;
+}
+
 module.exports = {
     getDocument: getDocument,
     getDocumentByQuery: getDocumentByQuery,
@@ -241,6 +254,7 @@ module.exports = {
     createDocuments: createDocuments,
     updateDocumentByQuery: updateDocumentByQuery,
     updateDocumentsByQuery: updateDocumentsByQuery,
+    aggregate: aggregate,
 };
 
 process.on('exit', () => {

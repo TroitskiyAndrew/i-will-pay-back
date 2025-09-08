@@ -54,8 +54,22 @@ const changeRole = async (req, res) => {
   }
 };
 
+const getMembers = async (req, res) => {
+  try {
+    const members = await dataService.getDocuments("members", {roomId: req.params.roomId})
+    res.status(200).send(members);
+    return;
+  } catch (error) {
+    console.log(error)
+    res.status(500).send(error);
+    return;
+  }
+};
+
+
 module.exports = {
   createMember: createMember,
   updateMember: updateMember,
   changeRole: changeRole,
+  getMembers: getMembers,
 };

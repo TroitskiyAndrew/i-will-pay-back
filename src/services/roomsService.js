@@ -3,9 +3,8 @@ const membersService = require("./membersService");
 const socketService = require("./socketService");
 
 async function createRoom(room, member) {
-    room.members = [];
     const newRoom = await dataService.createDocument("rooms", room);
-    await membersService.createMember({...member, roomId: newRoom.id});
+    await membersService.createMember({...member, roomId: newRoom.id, isAdmin: true, grantedBy: null, chatMember: true});
     return newRoom;
 }
 
