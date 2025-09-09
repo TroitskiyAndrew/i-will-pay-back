@@ -75,9 +75,22 @@ const deleteShare = async (req, res) => {
   }
 };
 
+const getShares = async (req, res) => {
+  try {
+    const shares = await dataService.getDocuments("shares", {paymentId: req.params.paymentId})
+    res.status(200).send(shares);
+    return;
+  } catch (error) {
+    console.log(error)
+    res.status(500).send(error);
+    return;
+  }
+};
+
 
 module.exports = {
   createShare: createShare,
   updateShare: updateShare,
   deleteShare: deleteShare,
+  getShares: getShares,
 };

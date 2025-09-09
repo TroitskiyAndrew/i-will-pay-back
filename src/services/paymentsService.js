@@ -14,6 +14,7 @@ async function createPayment(payment, shares) {
 }
 
 async function updatePayment(payment, shares) {
+    delete payment.balance;
     const updatedPayment = await dataService.updateDocument("payments", payment);
     if(shares){
         for (const share of shares){

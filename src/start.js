@@ -109,6 +109,7 @@ app.get("/rooms", roomsController.getRooms);
 app.post("/rooms", roomsController.createRoom);
 app.put("/rooms", roomsController.updateRoom);
 
+app.get("/shares/:paymentId", sharesController.getShares);
 app.post("/shares", sharesController.createShare);
 app.put("/shares", sharesController.updateShare);
 app.delete("/shares/:shareId", sharesController.deleteShare);

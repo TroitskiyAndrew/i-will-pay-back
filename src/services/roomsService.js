@@ -8,9 +8,9 @@ async function createRoom(room, member) {
     return newRoom;
 }
 
-async function updateRoom(room) {    
+async function updateRoom(room) {  
+    delete room.balance;  
     const updatedRoom = await dataService.updateDocument("rooms", room);
-    
     socketService.sendMessage(room.id, {action: 'updateRoom', updatedRoom})
     return updatedRoom;
 }

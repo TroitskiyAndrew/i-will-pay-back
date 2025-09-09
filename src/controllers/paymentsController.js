@@ -72,41 +72,40 @@ const getPayments = async (req, res) => {
       return;
     } else {
       const payments = await dataService.aggregate("payments", [
-        // Подтягиваем только те shares, которые относятся к этому платежу и пользователю
         {
           $lookup: {
             from: "shares",
-            let: { pid: "$id", uid: userId },
+            let: { pid: "$_id", uid: user.id },
             pipeline: [
               {
                 $match: {
                   $expr: {
                     $and: [
-                      { $eq: ["$paymentId", "$$pid"] },
-                      { $or: [ { $eq: ["$userId", "$$uid"] }, { $eq: ["$payerId", "$$uid"] } ] }
+                      // shares.paymentId (string) == toString(payments._id)
+                      { $eq: ["$paymentId", { $toString: "$$pid" }] },
+                      { $or: [
+                        { $eq: ["$userId", "$$uid"] },
+                        { $eq: ["$payerId", "$$uid"] }
+                      ] }
                     ]
                   }
                 }
               },
-              { $limit: 1 } // достаточно знать, что есть хотя бы одна
+              { $limit: 1 }
             ],
             as: "sharesForUser"
           }
         },
-      
-        // Оставляем платеж, если payer = userId или есть хоть один share для этого пользователя
         {
           $match: {
             $or: [
-              { payer: userId },
+              { payer: user.id },
               { $expr: { $gt: [ { $size: "$sharesForUser" }, 0 ] } }
             ]
           }
         },
-      
-        // Убираем служебное поле из выдачи
         { $project: { sharesForUser: 0 } }
-      ]);
+      ]).toArray();
       res.status(200).send(payments);
       return;
       

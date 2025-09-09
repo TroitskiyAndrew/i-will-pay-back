@@ -16,10 +16,14 @@ const createMember = async (req, res) => {
 
 const updateMember = async (req, res) => {
   try {
+    const {user} = req.telegramData;
     const member = req.body.member;
     const storedMember = await dataService.getDocument('members', member.id);
     member.isAdmin = storedMember.isAdmin;
     member.grantedBy = storedMember.grantedBy;
+    if(member.payer !== storedMember.payer && ![storedMember.userId, storedMember.payer].includes(user.id)){
+      member.payer = storedMember.payer;
+    }
     const {id, ...rest} = member
     await membersService.updateMembers({_id: new ObjectId(id)}, {$set: rest})
     res.status(200).send(true);

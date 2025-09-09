@@ -31,24 +31,32 @@ const getRooms = async (req, res) => {
     const { user } = req.telegramData;
     const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
     const rooms = await dataService.aggregate("members", [
-      {
-        $match: { userId: storedUser.id } // фильтруем участников
-      },
+      { $match: { userId: storedUser.id } },
       {
         $lookup: {
-          from: "rooms",          // имя коллекции с комнатами
-          localField: "roomId",   // поле в members
-          foreignField: "id",     // поле в rooms
-          as: "room"              // куда положить найденные комнаты
+          from: "rooms",
+          let: { rid: "$roomId" }, // строковый roomId из members
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  // сравниваем как строки: toString(_id) === toString(rid)
+                  $eq: [ { $toString: "$_id" }, { $toString: "$$rid" } ]
+                }
+              }
+            }
+          ],
+          as: "room"
         }
       },
-      {
-        $unwind: "$room" // развернуть массив, чтобы был один объект
-      },
-      {
-        $replaceRoot: { newRoot: "$room" } // вернуть только сами объекты комнат
-      }
-    ])
+      { $unwind: "$room" },
+      { $replaceRoot: { newRoot: "$room" } }
+    ]).toArray()
+    await Promise.all(rooms.map(async (room) => {
+      const payments = await dataService.getDocuments("payments", {roomId: room.id, payer: user.id});
+      const shares = await dataService.getDocuments("shares", {roomId: room.id, payer: user.id});
+      room.balance = payments.reduce((res, payment) => res+= payment.amount, 0 ) - shares.reduce((res, share) => res+= share.balance, 0 )
+    }))
     res.status(200).send(rooms);
     return;
   } catch (error) {
