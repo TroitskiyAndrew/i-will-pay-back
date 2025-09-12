@@ -33,7 +33,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     // 2) парсим URLSearchParams
     const params = new URLSearchParams(raw);
     const givenHash = params.get('hash');
-    if (!givenHash) return res.status(401).json({ error: 'hash missing' });
+    if (!givenHash) return res.status(402).json({ error: 'hash missing' });
     params.delete('hash');
 
     // 3) собираем data-check-string
@@ -54,12 +54,12 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
     // timing-safe сравнение
     const ok = crypto.timingSafeEqual(Buffer.from(calcHash), Buffer.from(givenHash));
-    if (!ok) return res.status(401).json({ error: 'Invalid initData signature' });
+    if (!ok) return res.status(403).json({ error: 'Invalid initData signature' });
 
     // 5) проверяем «свежесть»
     const authDate = Number(params.get('auth_date') || 0);
     if (!authDate || (Math.floor(Date.now() / 1000) - authDate) > MAX_AGE_SECONDS) {
-      return res.status(401).json({ error: 'initData expired' });
+      return res.status(404).json({ error: 'initData expired' });
     }
 
     // 6) извлекаем полезные поля (если есть)
