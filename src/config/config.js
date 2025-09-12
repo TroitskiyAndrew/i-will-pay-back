@@ -7,4 +7,5 @@ module.exports = {
     frontURL: process.env.FRONT_URL || "*",
     botToken: process.env.BOT_TOKEN  || "",
     telegrammHeader: process.env.BOT_TOKEN  || "",
+    prod: process.env.LOCAL_DEVELOPMENT  == null,
 }

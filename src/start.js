@@ -16,12 +16,15 @@ const server = http.createServer(app);
 
 socketService.initSocket(server)
 
-const  telegramInitDataMiddleware = (req, res, next) => {
+const telegramInitDataMiddleware = (req, res, next) => {
   try {
-    // // ToDo для локального тестирования
-    // req.telegramData = { user: {id: 888, first_name: 'Test 2'}, chat: {id: 555, title: 'test'}, startParam: null }
-    // next();
-    // return;
+
+    if (!config.prod) {
+      // ToDo для локального тестирования
+      req.telegramData = { user: { id: 888, first_name: 'Test 2' }, chat: { id: 555, title: 'test' }, startParam: null }
+      next();
+      return;
+    }
 
     // 1) достаём сырые данные (из заголовка или, на всякий, из body.initData)
     const raw = (req.header(config.telegrammHeader) || req.body?.initData || '').toString();
@@ -43,11 +46,11 @@ const  telegramInitDataMiddleware = (req, res, next) => {
 
     // 4) считаем подпись
     const secretKey = crypto.createHmac('sha256', 'WebAppData')
-                            .update(config.botToken)
-                            .digest();
+      .update(config.botToken)
+      .digest();
     const calcHash = crypto.createHmac('sha256', secretKey)
-                           .update(dataCheckString)
-                           .digest('hex');
+      .update(dataCheckString)
+      .digest('hex');
 
     // timing-safe сравнение
     const ok = crypto.timingSafeEqual(Buffer.from(calcHash), Buffer.from(givenHash));
@@ -55,7 +58,7 @@ const  telegramInitDataMiddleware = (req, res, next) => {
 
     // 5) проверяем «свежесть»
     const authDate = Number(params.get('auth_date') || 0);
-    if (!authDate || (Math.floor(Date.now()/1000) - authDate) > MAX_AGE_SECONDS) {
+    if (!authDate || (Math.floor(Date.now() / 1000) - authDate) > MAX_AGE_SECONDS) {
       return res.status(401).json({ error: 'initData expired' });
     }
 
@@ -69,11 +72,11 @@ const  telegramInitDataMiddleware = (req, res, next) => {
       try { return JSON.parse(s) } catch { return undefined; }
     };
 
-    const user      = parseJson('user');
-    const chat      = parseJson('chat');
-    const receiver  = parseJson('receiver');
-    const chatType  = params.get('chat_type');
-    const startParam= params.get('start_param');
+    const user = parseJson('user');
+    const chat = parseJson('chat');
+    const receiver = parseJson('receiver');
+    const chatType = params.get('chat_type');
+    const startParam = params.get('start_param');
 
     // 7) кладём в req и идём дальше
     req.telegramData = {
