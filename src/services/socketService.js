@@ -8,14 +8,19 @@ const initSocket = function (server) {
         cors: { origin: config.frontURL, credentials: true },
     });
     io.use((socket, next) => {
-        const roomId = socket.handshake.auth.roomId;
-        socket.roomId = roomId;
+        socket.roomIds = socket.handshake.auth.roomIds;
+        socket.userId = socket.handshake.auth.userId;
         next();
     });
     io.on('connection', (socket) => {
-        console.log('Client connected:', socket.roomId);
-        if (socket.roomId) {
-            socket.join(socket.roomId);
+        console.log('Client connected:', socket.userId);
+        if (socket.roomIds) {
+            socket.roomIds.forEach(roomId => {
+                socket.join(roomId);
+            });            
+        }
+        if (socket.userId) {
+            socket.join(socket.userId);           
         }
 
         socket.on('disconnect', () => {

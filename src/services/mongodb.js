@@ -233,7 +233,8 @@ const aggregate = async (collectionName, query) => {
     try {
         await connectClient();
         const collection = client.db('i-will-pay').collection(collectionName);
-        result = await collection.aggregate(query);
+        aggregationResults = await collection.aggregate(query).toArray();
+        result = aggregationResults.map(mapDocumentFromMongo);
     } catch (err) {
         console.log('Operation aggregate failed', err);
         result = null;

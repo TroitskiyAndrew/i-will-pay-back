@@ -1,19 +1,23 @@
+const { ObjectId } = require("mongodb");
 const dataService = require("./mongodb");
 const socketService = require("./socketService");
 
 
 async function createMember(member) {
     const newMember = await dataService.createDocument("members",member);
-    socketService.sendMessage(newMember.roomId, {action: 'addMember', newMember})
+    const room = await dataService.getDocumentByQuery("rooms", {_id: new ObjectId(newMember.roomId)})
+    console.log('newMember', newMember.roomId);
+    socketService.sendMessage(newMember.roomId, {action: 'addMember', member: newMember})
+    socketService.sendMessage(newMember.userId, {action: 'addRoom', room})
     return newMember;
 }
 
 async function updateMembers(query, update) {
     const updated = await dataService.updateDocuments("members", query, update );
     if(updated){
-        updated.forEach(updatedMember => socketService.sendMessage(updatedMember.roomId, {action: 'updateMember', updatedMember}))
+        updated.forEach(updatedMember => socketService.sendMessage(updatedMember.roomId, {action: 'updateMember', member: updatedMember}))
     }
-    return updated;
+    return updated
 }
 
 

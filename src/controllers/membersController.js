@@ -4,7 +4,9 @@ const membersService = require("../services/membersService");
 
 const createMember = async (req, res) => {
   try {
-    const newMember = await membersService.createMember(req.body.member)
+    const {roomId, name} = req.body;
+    const newUser = await dataService.createDocument("users", { name })
+    const newMember = await membersService.createMember({roomId, name, userId: newUser.id, payer: newUser.id, isAdmin: false, grantedBy: null, isGuest: true})
     res.status(200).send(newMember);
     return;
   } catch (error) {
@@ -17,11 +19,12 @@ const createMember = async (req, res) => {
 const updateMember = async (req, res) => {
   try {
     const {user} = req.telegramData;
+    const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
     const member = req.body.member;
     const storedMember = await dataService.getDocument('members', member.id);
     member.isAdmin = storedMember.isAdmin;
     member.grantedBy = storedMember.grantedBy;
-    if(member.payer !== storedMember.payer && ![storedMember.userId, storedMember.payer].includes(user.id)){
+    if(member.payer !== storedMember.payer && ![storedMember.userId,storedMember.payer, member.payer].includes(storedUser.id)){
       member.payer = storedMember.payer;
     }
     const {id, ...rest} = member

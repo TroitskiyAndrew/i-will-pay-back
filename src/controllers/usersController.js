@@ -8,7 +8,7 @@ const createUser = async (req, res) => {
   try {
     const { name, roomId } = req.body;
     const newUser = await dataService.createDocument("users", { name })
-    await membersService.createMember({ userId: newUser.id, roomId, name, isAdmin: false, grantedBy: null, chatMember: false });
+    await membersService.createMember({ userId: newUser.id, roomId, name, isAdmin: false, grantedBy: null, isGuest: true });
     res.status(200).send(true);
     return;
   } catch (error) {
@@ -45,7 +45,7 @@ const auth = async (req, res) => {
     if (chat) {
       let room = await dataService.getDocumentByQuery("rooms", { chatId: chat.id })
       if (!room) {
-        room = await roomsService.createRoom({ chatId: chat.id, name: chat.title }, { userId: user.id, name: userFinal.name, payer: user.id })
+        room = await roomsService.createRoom({ chatId: chat.id, name: chat.title }, { userId: userFinal.id, name: userFinal.name, payer: userFinal.id })
       } else {
         const member = await dataService.getDocumentByQuery("members", { userId: userFinal.id, roomId: room.id });
         if (!member) {
@@ -55,16 +55,16 @@ const auth = async (req, res) => {
             name: userFinal.name,
             isAdmin: false,
             grantedBy: null,
-            chatMember: true,
+            isGuest: false,
             payer: userFinal.id
           })
-        } else if(!member.chatMember) {
-          await dataService.updateDocument("members", {...member, chatMember: true})
+        } else if(member.isGuest) {
+          await dataService.updateDocument("members", {...member, isGuest: false})
         }
       }
       roomId = room?.id || null
     }
-    res.status(200).send({ user, roomId });
+    res.status(200).send({ user: userFinal, roomId });
     return;
   } catch (error) {
     res.status(500).send(error);

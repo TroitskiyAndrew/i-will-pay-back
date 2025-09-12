@@ -4,25 +4,35 @@ const socketService = require("./socketService");
 
 async function createPayment(payment, shares) {
     const newPayment = await dataService.createDocument("payments", payment);
-    if(shares){
-        for (const share of shares){
-            await sharesService.createShare(share, false)
-        }
-    }
-    socketService.sendMessage(newPayment.roomId, {action: 'addPayment', newPayment})
+    await handleShares(shares, newPayment, false);
+    socketService.sendMessage(newPayment.roomId, {action: 'addPayment', payment: newPayment})
     return newPayment;
 }
 
 async function updatePayment(payment, shares) {
-    delete payment.balance;
     const updatedPayment = await dataService.updateDocument("payments", payment);
-    if(shares){
-        for (const share of shares){
-            await sharesService.updateShare(share, updatedPayment.roomId)
-        }        
-    }
-    socketService.sendMessage(updatedPayment.roomId, {action: 'updatePayment', updatedPayment})
+    await handleShares(shares, updatedPayment);
+    socketService.sendMessage(updatedPayment.roomId, {action: 'updatePayment', payment: updatedPayment})
     return updatedPayment;
+}
+
+async function handleShares(shares, payment, notify = true) {
+    for (const share of shares){
+        share.paymentId = payment.id;
+        share.roomId = payment.roomId;
+        share.paymentPayer = payment.payer;
+        const isEmpty = share.share === null && share.amount === null;
+        if(share.id){
+            if(isEmpty){
+                await sharesService.deleteShare(share.id)
+            } else {
+                await sharesService.updateShare(share)
+            }
+        } else if(!isEmpty){
+            await sharesService.createShare(share, notify)
+        }
+        
+    }
 }
 
 async function deletePayment(id) {

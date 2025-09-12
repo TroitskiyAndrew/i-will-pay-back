@@ -5,7 +5,8 @@ const createPayment = async (req, res) => {
   try {
     const { user } = req.telegramData;
     const { payment, shares } = req.body;
-    payment.payer = user.id;
+    const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
+    payment.payer = storedUser.id;
     await paymentsService.createPayment(payment, shares || []);
     res.status(200).send(true);
     return;
@@ -22,10 +23,9 @@ const updatePayment = async (req, res) => {
     const { payment, shares } = req.body;
     const storedPayment = await dataService.getDocument("payments", payment.id);
     const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
-    if (storedPayment.payer !== storedUser.id) {
+    if (payment.amount !== storedPayment.amount && storedPayment.payer !== storedUser.id) {
       throw new Error('Нельзя редактировать чужие платежи')
     }
-    payment.payer = user.id;
     await paymentsService.updatePayment(payment, shares || []);
     res.status(200).send(true);
     return;
@@ -61,21 +61,18 @@ const deletePayment = async (req, res) => {
 const getPayments = async (req, res) => {
   try {
     const { user } = req.telegramData;
-    const member = await dataService.getDocumentByQuery("members", { roomId: req.params.roomId, userId: user.id });
+    const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
+    const member = await dataService.getDocumentByQuery("members", { roomId: req.params.roomId, userId: storedUser.id });
     if (!member) {
       res.status(401).send('Вы не состоите в этой группе');
       return;
     }
-    if(member.chatMember) {
-      const payments = await dataService.getDocuments("payments", {roomId: req.params.roomId});
-      res.status(200).send(payments);
-      return;
-    } else {
+    if(member.isGuest) {
       const payments = await dataService.aggregate("payments", [
         {
           $lookup: {
             from: "shares",
-            let: { pid: "$_id", uid: user.id },
+            let: { pid: "$_id", uid: storedUser.id },
             pipeline: [
               {
                 $match: {
@@ -99,13 +96,17 @@ const getPayments = async (req, res) => {
         {
           $match: {
             $or: [
-              { payer: user.id },
+              { payer: storedUser.id },
               { $expr: { $gt: [ { $size: "$sharesForUser" }, 0 ] } }
             ]
           }
         },
         { $project: { sharesForUser: 0 } }
-      ]).toArray();
+      ]);
+      res.status(200).send(payments);
+      return;
+    } else {
+      const payments = await dataService.getDocuments("payments", {roomId: req.params.roomId});
       res.status(200).send(payments);
       return;
       

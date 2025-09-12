@@ -9,6 +9,7 @@ const paymentsController = require("./controllers/paymentsController");
 const roomsController = require("./controllers/roomsController");
 const sharesController = require("./controllers/sharesController");
 const socketService = require("./services/socketService");
+const { title } = require("process");
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,11 @@ socketService.initSocket(server)
 
 const  telegramInitDataMiddleware = (req, res, next) => {
   try {
+    // ToDo для локального тестирования
+    req.telegramData = { user: {id: 888, first_name: 'Test 2'}, chat: {id: 555, title: 'test'}, startParam: null }
+    next();
+    return;
+
     // 1) достаём сырые данные (из заголовка или, на всякий, из body.initData)
     const raw = (req.header(config.telegrammHeader) || req.body?.initData || '').toString();
     if (!raw) return res.status(401).json({ error: 'initData missing' });
@@ -108,6 +114,7 @@ app.delete("/payments/:paymentId", paymentsController.deletePayment);
 app.get("/rooms", roomsController.getRooms);
 app.post("/rooms", roomsController.createRoom);
 app.put("/rooms", roomsController.updateRoom);
+app.get("/state/:roomId", roomsController.getRoomState);
 
 app.get("/shares/:paymentId", sharesController.getShares);
 app.post("/shares", sharesController.createShare);
