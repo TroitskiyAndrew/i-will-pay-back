@@ -18,10 +18,10 @@ socketService.initSocket(server)
 
 const  telegramInitDataMiddleware = (req, res, next) => {
   try {
-    // ToDo для локального тестирования
-    req.telegramData = { user: {id: 888, first_name: 'Test 2'}, chat: {id: 555, title: 'test'}, startParam: null }
-    next();
-    return;
+    // // ToDo для локального тестирования
+    // req.telegramData = { user: {id: 888, first_name: 'Test 2'}, chat: {id: 555, title: 'test'}, startParam: null }
+    // next();
+    // return;
 
     // 1) достаём сырые данные (из заголовка или, на всякий, из body.initData)
     const raw = (req.header(config.telegrammHeader) || req.body?.initData || '').toString();
