@@ -23,7 +23,7 @@ const auth = async (req, res) => {
     const { user, chat, startParam } = req.telegramData;
     let userFinal = null;
     userFinal = await dataService.getDocumentByQuery("users", { telegramId: user.id });
-    if (userFinal && startParam.userId && userFinal.id !== startParam.userId) {
+    if (userFinal && startParam?.userId && userFinal.id !== startParam.userId) {
       const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId), telegramId: { $exists: false } });
       if (guest) {
         await membersService.updateMembers({ userId: guest.id }, { $set: { userId: userFinal.id } });
@@ -67,6 +67,7 @@ const auth = async (req, res) => {
     res.status(200).send({ user: userFinal, roomId });
     return;
   } catch (error) {
+    console.log(error)
     res.status(500).send(error);
     return;
   }
