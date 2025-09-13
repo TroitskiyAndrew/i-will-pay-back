@@ -30,7 +30,16 @@ const telegramInitDataMiddleware = (req, res, next) => {
     // middleware: verify Telegram initData and attach req.telegramData
     // Требует: config.telegrammHeader, config.botToken, MAX_AGE_SECONDS, crypto, URLSearchParams
 
-    // внутри вашего обработчика/мидлварки:
+    console.log('BOT_TOKEN_LEN=', (config.botToken || '').length);
+    console.log('BOT_TOKEN_VISIBLE=', JSON.stringify(config.botToken || ''));
+    console.log('BOT_TOKEN_HEX=', Buffer.from(config.botToken || '').toString('hex'));
+
+    // Проверка: какой бот по этому токену
+    fetch(`https://api.telegram.org/bot${config.botToken}/getMe`)
+      .then(r => r.json())
+      .then(x => console.log('BOT getMe:', x))
+      .catch(e => console.error('getMe failed:', e));
+
     console.log(1);
 
     // 1) достаём сырые данные (из заголовка или, на всякий, из body.initData)
@@ -61,24 +70,33 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
     console.log('DATA_CHECK_STRING=\n' + dataCheckString);
 
-    // 4) считаем подпись
+    // 4) считаем подпись (вариант для WebApp — правильный)
     const secretKey = crypto.createHmac('sha256', 'WebAppData')
       .update(config.botToken)
       .digest();
-    const calcHash = crypto.createHmac('sha256', secretKey)
+    const calcHashWebApp = crypto.createHmac('sha256', secretKey)
+      .update(dataCheckString)
+      .digest('hex');
+
+    // 4.1) Доп. диагностика: альтернативная формула (для Login Widget) — ДОЛЖНА НЕ СОВПАДАТЬ
+    const secretKeyLogin = crypto.createHash('sha256')
+      .update(config.botToken)
+      .digest();
+    const calcHashLogin = crypto.createHmac('sha256', secretKeyLogin)
       .update(dataCheckString)
       .digest('hex');
 
     console.log('BOT_TOKEN_PREFIX=', (config.botToken || '').slice(0, 10));
     console.log('SECRET_KEY_HEX=', Buffer.from(secretKey).toString('hex'));
-    console.log('CALC_HASH=', calcHash);
+    console.log('CALC_HASH_WEBAPP=', calcHashWebApp);
+    console.log('CALC_HASH_LOGIN =', calcHashLogin);
     console.log(3);
 
-    // timing-safe сравнение
-    if (calcHash.length !== givenHash.length) {
+    // timing-safe сравнение (для WebApp формулы)
+    if (calcHashWebApp.length !== givenHash.length) {
       return res.status(401).json({ error: 'Invalid initData signature (length mismatch)' });
     }
-    const ok = crypto.timingSafeEqual(Buffer.from(calcHash), Buffer.from(givenHash));
+    const ok = crypto.timingSafeEqual(Buffer.from(calcHashWebApp), Buffer.from(givenHash));
     if (!ok) return res.status(401).json({ error: 'Invalid initData signature' });
     console.log(4);
 
