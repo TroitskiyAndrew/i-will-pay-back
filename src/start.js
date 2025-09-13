@@ -27,145 +27,66 @@ const telegramInitDataMiddleware = (req, res, next) => {
       return;
     }
 
-    // middleware: verify Telegram initData and attach req.telegramData
-    // Требует: config.telegrammHeader, config.botToken, MAX_AGE_SECONDS, crypto, URLSearchParams
-
-    console.log('BOT_TOKEN_LEN=', (config.botToken || '').length);
-    console.log('BOT_TOKEN_VISIBLE=', JSON.stringify(config.botToken || ''));
-    console.log('BOT_TOKEN_HEX=', Buffer.from(config.botToken || '').toString('hex'));
-
-    // Проверка токена: какой бот?
-    fetch(`https://api.telegram.org/bot${config.botToken}/getMe`)
-      .then(r => r.json())
-      .then(x => console.log('BOT getMe:', x))
-      .catch(e => console.error('getMe failed:', e));
-
-    console.log(1);
-
-    // 1) достаём сырые данные (из заголовка или, на всякий, из body.initData)
-    const raw = (req.header(config.telegrammHeader) || req.body?.initData || '').toString();
-    if (!raw) return res.status(401).json({ error: 'initData missing' });
-    console.log('RAW_INITDATA=', raw);
-    console.log(2);
-
-    // 2) парсим URLSearchParams
-    const params = new URLSearchParams(raw);
-    const givenHash = params.get('hash');
-    if (!givenHash) return res.status(401).json({ error: 'hash missing' });
-
-    // исключаем hash и signature
-    params.delete('hash');
-    params.delete('signature');
-
-    console.log('GIVEN_HASH=', givenHash, 'len=', givenHash?.length);
-    console.log('PAIRS_BEFORE_SORT=', [...params.entries()]);
-
-    // 3) базовый data-check-string (decoded + sorted)
-    const pairs = [];
-    for (const [k, v] of params.entries()) pairs.push(`${k}=${v}`);
-    pairs.sort();
-    const dataCheckString = pairs.join('\n');
-    console.log('DATA_CHECK_STRING=\n' + dataCheckString);
-
-    // === DIAG: варианты построения строки и HMAC ======================
-    function hmacWebApp(botToken, str) {
-      const secretKey = crypto.createHmac('sha256', Buffer.from('WebAppData'))
-        .update(Buffer.from(botToken, 'utf8'))
-        .digest();
-      return crypto.createHmac('sha256', secretKey)
-        .update(Buffer.from(str, 'utf8'))
-        .digest('hex');
+    // 1) Получаем СЫРУЮ строку initData (как есть, без перекодирования!)
+    const raw = (req.get(config.telegrammHeader) || req.body?.initData || '').toString();
+    if (!raw) {
+      return res.status(401).json({ error: 'initData missing' });
     }
 
-    // Entries (decoded)
-    const entriesDecodedAll = [...params.entries()];
-    const entriesDecodedNoQ = entriesDecodedAll.filter(([k]) => k !== 'query_id');
+    // 2) Разбираем параметры (query-string)
+    const params = new URLSearchParams(raw);
 
-    // D1/H1 — decoded + sorted
-    const D1 = entriesDecodedAll.map(([k, v]) => `${k}=${v}`).sort().join('\n');
-    const H1 = hmacWebApp(config.botToken, D1);
+    const givenHash = params.get('hash');
+    if (!givenHash) {
+      return res.status(401).json({ error: 'hash missing' });
+    }
 
-    // D7/H7 — decoded + sorted + normalize user (\/ -> /)
-    let D7 = D1;
-    try {
-      const normalized = entriesDecodedAll.map(([k, v]) => {
-        if (k !== 'user') return `${k}=${v}`;
-        return `${k}=${v.replace(/\\\//g, '/')}`;
-      }).sort().join('\n');
-      D7 = normalized;
-    } catch { }
-    const H7 = hmacWebApp(config.botToken, D7);
+    // По инструкции в подпись идут "все полученные поля".
+    // На практике `hash` (и встречающееся у некоторых клиентов `signature`) нужно исключить.
+    // params.delete('hash');
+    // params.delete('signature');
 
-    // D8/H8 — decoded + sorted + normalize user (\/ -> /) + БЕЗ query_id
-    let D8 = entriesDecodedNoQ.map(([k, v]) => {
-      if (k !== 'user') return `${k}=${v}`;
-      return `${k}=${v.replace(/\\\//g, '/')}`;
-    }).sort().join('\n');
-    const H8 = hmacWebApp(config.botToken, D8);
+    // 3) Строим data_check_string: key=value, отсортировано по ключу, разделитель '\n'
+    const pairs = [];
+    for (const [k, v] of params.entries()) {
+      pairs.push(`${k}=${v}`);
+    }
+    pairs.sort(); // лексикографически по ключу
+    const dataCheckString = pairs.join('\n');
 
-    // (оставлю ещё парочку прежних для контроля)
-    const D2 = entriesDecodedNoQ.map(([k, v]) => `${k}=${v}`).sort().join('\n'); // decoded + sorted - query_id
-    const H2 = hmacWebApp(config.botToken, D2);
-
-    const rawPairs = raw.split('&').filter(Boolean).map(s => {
-      const i = s.indexOf('=');
-      return i >= 0 ? [s.slice(0, i), s.slice(i + 1)] : [s, ''];
-    });
-    const rawEntries = rawPairs.filter(([k]) => k !== 'hash' && k !== 'signature');
-    const D3 = rawEntries.map(([k, v]) => `${k}=${v ?? ''}`).sort().join('\n');
-    const H3 = hmacWebApp(config.botToken, D3);
-
-    console.log('— DIAG —');
-    console.log('GIVEN_HASH                =', givenHash);
-    console.log('H1 dec+sorted             =', H1);
-    console.log('H2 dec+sorted -qid        =', H2);
-    console.log('H7 dec+sorted user(\\/→/) =', H7);
-    console.log('H8 dec+sorted user -qid   =', H8);
-    console.log('H3 raw+sorted             =', H3);
-    console.log('D1\n' + D1);
-    console.log('D7\n' + D7);
-    console.log('D8\n' + D8);
-    // === /DIAG ==============================================================
-
-    // 4) боевой расчёт — будем использовать тот вариант, который совпадёт.
-    // По умолчанию — D1. Если совпал D7 или D8 — будем доверять ему.
-    let chosen = 'D1', chosenString = D1, chosenHash = H1;
-    if (H7 === givenHash) { chosen = 'D7'; chosenString = D7; chosenHash = H7; }
-    if (H8 === givenHash) { chosen = 'D8'; chosenString = D8; chosenHash = H8; }
-
-    console.log('CHOSEN_VARIANT=', chosen);
-    console.log('CALC_HASH_WEBAPP=', chosenHash);
-
+    // 4) Секретный ключ и расчёт подписи по инструкции
+    // secret_key = HMAC_SHA256(key="WebAppData", msg=<BOT_TOKEN>)
     const secretKey = crypto
       .createHmac('sha256', Buffer.from('WebAppData'))
       .update(Buffer.from(config.botToken, 'utf8'))
-      .digest();
+      .digest(); // Buffer
 
-    const calcHashWebApp = crypto
+    // calcHash = hex(HMAC_SHA256(key=secret_key, msg=data_check_string))
+    const calcHash = crypto
       .createHmac('sha256', secretKey)
-      .update(Buffer.from(chosenString, 'utf8'))
+      .update(Buffer.from(dataCheckString, 'utf8'))
       .digest('hex');
 
-    console.log('BOT_TOKEN_PREFIX=', (config.botToken || '').slice(0, 10));
-    console.log('SECRET_KEY_HEX=', Buffer.from(secretKey).toString('hex'));
-
-    if (calcHashWebApp.length !== givenHash.length) {
+    // 5) Сравнение подписи (времязащищённое)
+    if (calcHash.length !== givenHash.length) {
       return res.status(401).json({ error: 'Invalid initData signature (length mismatch)' });
     }
-    const ok = crypto.timingSafeEqual(Buffer.from(calcHashWebApp, 'hex'), Buffer.from(givenHash, 'hex'));
-    if (!ok) return res.status(401).json({ error: 'Invalid initData signature' });
-    console.log(3);
+    const ok = crypto.timingSafeEqual(
+      Buffer.from(calcHash, 'hex'),
+      Buffer.from(givenHash, 'hex')
+    );
+    if (!ok) {
+      return res.status(401).json({ error: 'Invalid initData signature' });
+    }
 
-    // 5) проверяем «свежесть»
+    // 6) Доп. защита: проверка «свежести» по auth_date
     const authDate = Number(params.get('auth_date') || 0);
-    if (!authDate || (Math.floor(Date.now() / 1000) - authDate) > MAX_AGE_SECONDS) {
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!authDate || nowSec - authDate > MAX_AGE_SECONDS) {
       return res.status(401).json({ error: 'initData expired' });
     }
 
-    // 6) извлекаем полезные поля (если есть)
-    const asRecord = {};
-    for (const [k, v] of params.entries()) asRecord[k] = v;
-
+    // 7) Разбор сложных полей (user/chat/receiver) — это JSON-строки
     const parseJson = (key) => {
       const s = params.get(key);
       if (!s) return undefined;
@@ -175,21 +96,23 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const user = parseJson('user');
     const chat = parseJson('chat');
     const receiver = parseJson('receiver');
-    const chatType = params.get('chat_type');
-    const startParam = params.get('start_param');
+    const chatType = params.get('chat_type') || null;
+    const startParam = params.get('start_param') || null;
 
-    // 7) кладём в req и идём дальше
+    // 8) Сохраняем данные в req и идём дальше
+    const flatParams = {};
+    for (const [k, v] of params.entries()) flatParams[k] = v;
+
     req.telegramData = {
-      raw,
-      user,
-      authDate,
-      startParam: startParam ?? null,
-      chatType: chatType ?? null,
-      chat: chat ?? null,
-      receiver: receiver ?? null,
-      params: asRecord,
+      raw,                // исходная строка initData
+      user,               // объект user (если был)
+      chat,               // объект chat (если был)
+      receiver,           // объект receiver (если был)
+      chatType,           // chat_type (если был)
+      startParam,         // start_param (если был)
+      authDate,           // UNIX-время из initData
+      params: flatParams, // все пары, кроме hash/signature
     };
-    console.log(5);
 
     next();
 
