@@ -43,8 +43,8 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
     // По инструкции в подпись идут "все полученные поля".
     // На практике `hash` (и встречающееся у некоторых клиентов `signature`) нужно исключить.
-    // params.delete('hash');
-    // params.delete('signature');
+    params.delete('hash');
+    params.delete('signature');
 
     // 3) Строим data_check_string: key=value, отсортировано по ключу, разделитель '\n'
     const pairs = [];
