@@ -10,7 +10,6 @@ const paymentsController = require("./controllers/paymentsController");
 const roomsController = require("./controllers/roomsController");
 const sharesController = require("./controllers/sharesController");
 const socketService = require("./services/socketService");
-const { title } = require("process");
 
 const app = express();
 const server = http.createServer(app);
@@ -26,9 +25,11 @@ const telegramInitDataMiddleware = (req, res, next) => {
       return;
     }
 
+    console.log(1)
     // 1) достаём сырые данные (из заголовка или, на всякий, из body.initData)
     const raw = (req.header(config.telegrammHeader) || req.body?.initData || '').toString();
     if (!raw) return res.status(401).json({ error: 'initData missing' });
+    console.log(2)
 
     // 2) парсим URLSearchParams
     const params = new URLSearchParams(raw);
@@ -51,11 +52,11 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const calcHash = crypto.createHmac('sha256', secretKey)
       .update(dataCheckString)
       .digest('hex');
-
+      console.log(3)
     // timing-safe сравнение
     const ok = crypto.timingSafeEqual(Buffer.from(calcHash), Buffer.from(givenHash));
     if (!ok) return res.status(401).json({ error: 'Invalid initData signature' });
-
+    console.log(4)
     // 5) проверяем «свежесть»
     const authDate = Number(params.get('auth_date') || 0);
     if (!authDate || (Math.floor(Date.now() / 1000) - authDate) > MAX_AGE_SECONDS) {
@@ -89,7 +90,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
       receiver: receiver ?? null,
       params: asRecord,
     };
-
+    console.log(5)
     next();
   } catch (e) {
     console.log(e)
