@@ -34,7 +34,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     console.log('BOT_TOKEN_VISIBLE=', JSON.stringify(config.botToken || ''));
     console.log('BOT_TOKEN_HEX=', Buffer.from(config.botToken || '').toString('hex'));
 
-    // Проверка: какой бот по этому токену
+    // Проверка токена: какой бот?
     fetch(`https://api.telegram.org/bot${config.botToken}/getMe`)
       .then(r => r.json())
       .then(x => console.log('BOT getMe:', x))
@@ -53,7 +53,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const givenHash = params.get('hash');
     if (!givenHash) return res.status(401).json({ error: 'hash missing' });
 
-    // ⚠️ ВАЖНО: исключаем и hash, и signature из набора для подписи
+    // ⚠️ Исключаем и hash, и signature из набора для подписи
     params.delete('hash');
     params.delete('signature');
 
@@ -67,23 +67,25 @@ const telegramInitDataMiddleware = (req, res, next) => {
     }
     pairs.sort();
     const dataCheckString = pairs.join('\n');
-
     console.log('DATA_CHECK_STRING=\n' + dataCheckString);
 
-    // 4) считаем подпись (вариант для WebApp — правильный)
-    const secretKey = crypto.createHmac('sha256', 'WebAppData')
-      .update(config.botToken)
-      .digest();
-    const calcHashWebApp = crypto.createHmac('sha256', secretKey)
-      .update(dataCheckString)
+    // 4) считаем подпись (строго байтами)
+    const secretKey = crypto
+      .createHmac('sha256', Buffer.from('WebAppData'))      // ключ = "WebAppData" (Buffer)
+      .update(Buffer.from(config.botToken, 'utf8'))         // BOT_TOKEN как Buffer
+      .digest();                                            // ← Buffer
+
+    const calcHashWebApp = crypto
+      .createHmac('sha256', secretKey)                      // key: Buffer
+      .update(Buffer.from(dataCheckString, 'utf8'))         // message: Buffer
       .digest('hex');
 
-    // 4.1) Доп. диагностика: альтернативная формула (для Login Widget) — ДОЛЖНА НЕ СОВПАДАТЬ
+    // Доп. диагностика: альтернативная формула (Login Widget) — должна НЕ совпадать
     const secretKeyLogin = crypto.createHash('sha256')
-      .update(config.botToken)
+      .update(Buffer.from(config.botToken, 'utf8'))
       .digest();
     const calcHashLogin = crypto.createHmac('sha256', secretKeyLogin)
-      .update(dataCheckString)
+      .update(Buffer.from(dataCheckString, 'utf8'))
       .digest('hex');
 
     console.log('BOT_TOKEN_PREFIX=', (config.botToken || '').slice(0, 10));
@@ -96,7 +98,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     if (calcHashWebApp.length !== givenHash.length) {
       return res.status(401).json({ error: 'Invalid initData signature (length mismatch)' });
     }
-    const ok = crypto.timingSafeEqual(Buffer.from(calcHashWebApp), Buffer.from(givenHash));
+    const ok = crypto.timingSafeEqual(Buffer.from(calcHashWebApp, 'hex'), Buffer.from(givenHash, 'hex'));
     if (!ok) return res.status(401).json({ error: 'Invalid initData signature' });
     console.log(4);
 
@@ -113,7 +115,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const parseJson = (key) => {
       const s = params.get(key);
       if (!s) return undefined;
-      try { return JSON.parse(s) } catch { return undefined; }
+      try { return JSON.parse(s); } catch { return undefined; }
     };
 
     const user = parseJson('user');
