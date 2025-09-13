@@ -60,7 +60,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     console.log('GIVEN_HASH=', givenHash, 'len=', givenHash?.length);
     console.log('PAIRS_BEFORE_SORT=', [...params.entries()]);
 
-    // 3) собираем data-check-string
+    // 3) собираем data-check-string (базовый вариант)
     const pairs = [];
     for (const [k, v] of params.entries()) {
       pairs.push(`${k}=${v}`);
@@ -69,29 +69,78 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const dataCheckString = pairs.join('\n');
     console.log('DATA_CHECK_STRING=\n' + dataCheckString);
 
-    // 4) считаем подпись (строго байтами)
+    // === DIAG: разные варианты data-check-string и HMAC ======================
+    function hmacWebApp(botToken, str) {
+      const secretKey = crypto.createHmac('sha256', Buffer.from('WebAppData'))
+        .update(Buffer.from(botToken, 'utf8'))
+        .digest();
+      return crypto.createHmac('sha256', secretKey)
+        .update(Buffer.from(str, 'utf8'))
+        .digest('hex');
+    }
+
+    // 1) Официальный путь: декодированные значения (URLSearchParams), все поля кроме hash/signature, сортировка по ключу
+    const entriesDecodedAll = [...params.entries()];
+    const D1 = entriesDecodedAll.map(([k, v]) => `${k}=${v}`).sort().join('\n');
+    const H1 = hmacWebApp(config.botToken, D1);
+
+    // 2) То же, но без query_id
+    const entriesDecodedNoQ = entriesDecodedAll.filter(([k]) => k !== 'query_id');
+    const D2 = entriesDecodedNoQ.map(([k, v]) => `${k}=${v}`).sort().join('\n');
+    const H2 = hmacWebApp(config.botToken, D2);
+
+    // 3) Сырые пары из raw (без декодирования), исключая hash/signature, с сортировкой
+    const rawPairs = raw.split('&').filter(Boolean).map(s => {
+      const i = s.indexOf('=');
+      return i >= 0 ? [s.slice(0, i), s.slice(i + 1)] : [s, ''];
+    });
+    const rawEntries = rawPairs.filter(([k]) => k !== 'hash' && k !== 'signature');
+    const D3 = rawEntries.map(([k, v]) => `${k}=${v ?? ''}`).sort().join('\n');
+    const H3 = hmacWebApp(config.botToken, D3);
+
+    // 4) Сырые пары без query_id
+    const rawEntriesNoQ = rawEntries.filter(([k]) => k !== 'query_id');
+    const D4 = rawEntriesNoQ.map(([k, v]) => `${k}=${v ?? ''}`).sort().join('\n');
+    const H4 = hmacWebApp(config.botToken, D4);
+
+    // 5) Декодированные, без сортировки (как есть)
+    const D5 = entriesDecodedAll.map(([k, v]) => `${k}=${v}`).join('\n');
+    const H5 = hmacWebApp(config.botToken, D5);
+
+    // 6) Сырые, без сортировки (как есть)
+    const D6 = rawEntries.map(([k, v]) => `${k}=${v ?? ''}`).join('\n');
+    const H6 = hmacWebApp(config.botToken, D6);
+
+    console.log('— DIAG —');
+    console.log('GIVEN_HASH         =', givenHash);
+    console.log('H1 dec+sorted      =', H1);
+    console.log('H2 dec+sorted -qid =', H2);
+    console.log('H3 raw+sorted      =', H3);
+    console.log('H4 raw+sorted -qid =', H4);
+    console.log('H5 dec no-sort     =', H5);
+    console.log('H6 raw no-sort     =', H6);
+    console.log('D1\n' + D1);
+    console.log('D2\n' + D2);
+    console.log('D3\n' + D3);
+    console.log('D4\n' + D4);
+    console.log('D5\n' + D5);
+    console.log('D6\n' + D6);
+    // === /DIAG ================================================================
+
+    // 4) считаем подпись (боевой вариант — строго байтами, как в доке)
     const secretKey = crypto
-      .createHmac('sha256', Buffer.from('WebAppData'))      // ключ = "WebAppData" (Buffer)
-      .update(Buffer.from(config.botToken, 'utf8'))         // BOT_TOKEN как Buffer
-      .digest();                                            // ← Buffer
-
-    const calcHashWebApp = crypto
-      .createHmac('sha256', secretKey)                      // key: Buffer
-      .update(Buffer.from(dataCheckString, 'utf8'))         // message: Buffer
-      .digest('hex');
-
-    // Доп. диагностика: альтернативная формула (Login Widget) — должна НЕ совпадать
-    const secretKeyLogin = crypto.createHash('sha256')
+      .createHmac('sha256', Buffer.from('WebAppData'))
       .update(Buffer.from(config.botToken, 'utf8'))
       .digest();
-    const calcHashLogin = crypto.createHmac('sha256', secretKeyLogin)
+
+    const calcHashWebApp = crypto
+      .createHmac('sha256', secretKey)
       .update(Buffer.from(dataCheckString, 'utf8'))
       .digest('hex');
 
     console.log('BOT_TOKEN_PREFIX=', (config.botToken || '').slice(0, 10));
     console.log('SECRET_KEY_HEX=', Buffer.from(secretKey).toString('hex'));
     console.log('CALC_HASH_WEBAPP=', calcHashWebApp);
-    console.log('CALC_HASH_LOGIN =', calcHashLogin);
     console.log(3);
 
     // timing-safe сравнение (для WebApp формулы)
