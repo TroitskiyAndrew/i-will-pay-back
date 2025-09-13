@@ -11,6 +11,8 @@ const roomsController = require("./controllers/roomsController");
 const sharesController = require("./controllers/sharesController");
 const socketService = require("./services/socketService");
 
+const MAX_AGE_SECONDS = 24 * 60 * 60; // 24 часа
+
 const app = express();
 const server = http.createServer(app);
 
