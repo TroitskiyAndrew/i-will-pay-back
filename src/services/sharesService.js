@@ -11,7 +11,20 @@ async function createShare(share, notify = true) {
 }
 
 
-async function updateShare(share) {
+async function updateShare(share, userId) {
+    const storedShare = await dataService.getDocument("shares", share.id);
+    if(share.balance !== storedShare) {
+        if (share.paymentPayer === userId){
+            share.confirmedByPayer = true; 
+        } else {
+            share.confirmedByPayer = false; 
+        }
+        if([share.payer, share.userId].includes(userId)) {
+            share.confirmedByUser = true;
+        } else {
+            share.confirmedByUser = false
+        }
+    }
     const updated = await dataService.updateDocument("shares",share );
     socketService.sendMessage(share.roomId, {action: 'updateShare', share: updated})
     return updated
