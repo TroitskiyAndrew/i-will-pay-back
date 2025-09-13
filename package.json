@@ -18,6 +18,7 @@
   "homepage": "https://github.com/TroitskiyAndrew/i-will-pay-back#readme",
   "description": "",
   "dependencies": {
+    "@telegram-apps/init-data-node": "^2.0.10",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.7",

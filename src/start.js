@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
-const crypto = require('crypto');
+import { parse, isValid } from '@telegram-apps/init-data-node';
 
 const config = require("./config/config");
 const usersController = require("./controllers/usersController");
@@ -32,87 +32,15 @@ const telegramInitDataMiddleware = (req, res, next) => {
     if (!raw) {
       return res.status(401).json({ error: 'initData missing' });
     }
-
-    // 2) Разбираем параметры (query-string)
-    const params = new URLSearchParams(raw);
-
-    const givenHash = params.get('hash');
-    if (!givenHash) {
-      return res.status(401).json({ error: 'hash missing' });
-    }
-
-    // По инструкции в подпись идут "все полученные поля".
-    // На практике `hash` (и встречающееся у некоторых клиентов `signature`) нужно исключить.
-    params.delete('hash');
-    params.delete('signature');
-
-    // 3) Строим data_check_string: key=value, отсортировано по ключу, разделитель '\n'
-    const pairs = [];
-    for (const [k, v] of params.entries()) {
-      pairs.push(`${k}=${v}`);
-    }
-    pairs.sort(); // лексикографически по ключу
-    const dataCheckString = pairs.join('\n');
-
-    // 4) Секретный ключ и расчёт подписи по инструкции
-    // secret_key = HMAC_SHA256(key="WebAppData", msg=<BOT_TOKEN>)
-    const secretKey = crypto
-      .createHmac('sha256', Buffer.from('WebAppData'))
-      .update(Buffer.from(config.botToken, 'utf8'))
-      .digest(); // Buffer
-
-    // calcHash = hex(HMAC_SHA256(key=secret_key, msg=data_check_string))
-    const calcHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(Buffer.from(dataCheckString, 'utf8'))
-      .digest('hex');
-
-    // 5) Сравнение подписи (времязащищённое)
-    if (calcHash.length !== givenHash.length) {
-      return res.status(401).json({ error: 'Invalid initData signature (length mismatch)' });
-    }
-    const ok = crypto.timingSafeEqual(
-      Buffer.from(calcHash, 'hex'),
-      Buffer.from(givenHash, 'hex')
+    const isInitDataValid = isValid(
+      raw,
+      config.botToken,
     );
-    if (!ok) {
-      return res.status(401).json({ error: 'Invalid initData signature' });
+    if(!isInitDataValid){
+      return res.status(401).json({ error: 'initData invalid' });
     }
 
-    // 6) Доп. защита: проверка «свежести» по auth_date
-    const authDate = Number(params.get('auth_date') || 0);
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (!authDate || nowSec - authDate > MAX_AGE_SECONDS) {
-      return res.status(401).json({ error: 'initData expired' });
-    }
-
-    // 7) Разбор сложных полей (user/chat/receiver) — это JSON-строки
-    const parseJson = (key) => {
-      const s = params.get(key);
-      if (!s) return undefined;
-      try { return JSON.parse(s); } catch { return undefined; }
-    };
-
-    const user = parseJson('user');
-    const chat = parseJson('chat');
-    const receiver = parseJson('receiver');
-    const chatType = params.get('chat_type') || null;
-    const startParam = params.get('start_param') || null;
-
-    // 8) Сохраняем данные в req и идём дальше
-    const flatParams = {};
-    for (const [k, v] of params.entries()) flatParams[k] = v;
-
-    req.telegramData = {
-      raw,                // исходная строка initData
-      user,               // объект user (если был)
-      chat,               // объект chat (если был)
-      receiver,           // объект receiver (если был)
-      chatType,           // chat_type (если был)
-      startParam,         // start_param (если был)
-      authDate,           // UNIX-время из initData
-      params: flatParams, // все пары, кроме hash/signature
-    };
+    req.telegramData = parse(raw);
 
     next();
 
