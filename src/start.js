@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
-import { parse, isValid } from '@telegram-apps/init-data-node';
+const  { parse, isValid } = require("@telegram-apps/init-data-node");
 
 const config = require("./config/config");
 const usersController = require("./controllers/usersController");
