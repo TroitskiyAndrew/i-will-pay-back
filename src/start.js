@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
+const crypto = require('crypto');
 
 const config = require("./config/config");
 const usersController = require("./controllers/usersController");
