@@ -18,7 +18,7 @@ socketService.initSocket(server)
 
 const telegramInitDataMiddleware = (req, res, next) => {
   try {
-
+    console.log(req.headers)
     if (!config.prod) {
       // ToDo для локального тестирования
       req.telegramData = { user: { id: 888, first_name: 'Test 2' }, chat: { id: 555, title: 'test' }, startParam: null }
