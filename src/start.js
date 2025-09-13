@@ -53,14 +53,14 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const givenHash = params.get('hash');
     if (!givenHash) return res.status(401).json({ error: 'hash missing' });
 
-    // ⚠️ исключаем hash и signature
+    // исключаем hash и signature
     params.delete('hash');
     params.delete('signature');
 
     console.log('GIVEN_HASH=', givenHash, 'len=', givenHash?.length);
     console.log('PAIRS_BEFORE_SORT=', [...params.entries()]);
 
-    // 3) базовый data-check-string (декодированные значения, сортировка по ключу)
+    // 3) базовый data-check-string (decoded + sorted)
     const pairs = [];
     for (const [k, v] of params.entries()) pairs.push(`${k}=${v}`);
     pairs.sort();
@@ -77,17 +77,36 @@ const telegramInitDataMiddleware = (req, res, next) => {
         .digest('hex');
     }
 
-    // 1) декодированные + сортировка (стандарт)
+    // Entries (decoded)
     const entriesDecodedAll = [...params.entries()];
+    const entriesDecodedNoQ = entriesDecodedAll.filter(([k]) => k !== 'query_id');
+
+    // D1/H1 — decoded + sorted
     const D1 = entriesDecodedAll.map(([k, v]) => `${k}=${v}`).sort().join('\n');
     const H1 = hmacWebApp(config.botToken, D1);
 
-    // 2) декодированные, без query_id
-    const entriesDecodedNoQ = entriesDecodedAll.filter(([k]) => k !== 'query_id');
-    const D2 = entriesDecodedNoQ.map(([k, v]) => `${k}=${v}`).sort().join('\n');
+    // D7/H7 — decoded + sorted + normalize user (\/ -> /)
+    let D7 = D1;
+    try {
+      const normalized = entriesDecodedAll.map(([k, v]) => {
+        if (k !== 'user') return `${k}=${v}`;
+        return `${k}=${v.replace(/\\\//g, '/')}`;
+      }).sort().join('\n');
+      D7 = normalized;
+    } catch { }
+    const H7 = hmacWebApp(config.botToken, D7);
+
+    // D8/H8 — decoded + sorted + normalize user (\/ -> /) + БЕЗ query_id
+    let D8 = entriesDecodedNoQ.map(([k, v]) => {
+      if (k !== 'user') return `${k}=${v}`;
+      return `${k}=${v.replace(/\\\//g, '/')}`;
+    }).sort().join('\n');
+    const H8 = hmacWebApp(config.botToken, D8);
+
+    // (оставлю ещё парочку прежних для контроля)
+    const D2 = entriesDecodedNoQ.map(([k, v]) => `${k}=${v}`).sort().join('\n'); // decoded + sorted - query_id
     const H2 = hmacWebApp(config.botToken, D2);
 
-    // 3) сырые пары из raw (без декодирования), исключая hash/signature
     const rawPairs = raw.split('&').filter(Boolean).map(s => {
       const i = s.indexOf('=');
       return i >= 0 ? [s.slice(0, i), s.slice(i + 1)] : [s, ''];
@@ -96,49 +115,27 @@ const telegramInitDataMiddleware = (req, res, next) => {
     const D3 = rawEntries.map(([k, v]) => `${k}=${v ?? ''}`).sort().join('\n');
     const H3 = hmacWebApp(config.botToken, D3);
 
-    // 4) сырые, без query_id
-    const rawEntriesNoQ = rawEntries.filter(([k]) => k !== 'query_id');
-    const D4 = rawEntriesNoQ.map(([k, v]) => `${k}=${v ?? ''}`).sort().join('\n');
-    const H4 = hmacWebApp(config.botToken, D4);
-
-    // 5) декодированные без сортировки
-    const D5 = entriesDecodedAll.map(([k, v]) => `${k}=${v}`).join('\n');
-    const H5 = hmacWebApp(config.botToken, D5);
-
-    // 6) сырые без сортировки
-    const D6 = rawEntries.map(([k, v]) => `${k}=${v ?? ''}`).join('\n');
-    const H6 = hmacWebApp(config.botToken, D6);
-
-    // 7) декодированные + сортировка, НО с нормализацией JSON в user: \/ → /
-    let D7 = D1;
-    try {
-      const idx = entriesDecodedAll.findIndex(([k]) => k === 'user');
-      if (idx !== -1) {
-        const normalized = entriesDecodedAll.map(([k, v]) => {
-          if (k !== 'user') return `${k}=${v}`;
-          // Нормализуем только слэши в JSON-строке значения user
-          const vFixed = v.replace(/\\\//g, '/');
-          return `${k}=${vFixed}`;
-        }).sort().join('\n');
-        D7 = normalized;
-      }
-    } catch { }
-    const H7 = hmacWebApp(config.botToken, D7);
-
     console.log('— DIAG —');
-    console.log('GIVEN_HASH         =', givenHash);
-    console.log('H1 dec+sorted      =', H1);
-    console.log('H2 dec+sorted -qid =', H2);
-    console.log('H3 raw+sorted      =', H3);
-    console.log('H4 raw+sorted -qid =', H4);
-    console.log('H5 dec no-sort     =', H5);
-    console.log('H6 raw no-sort     =', H6);
-    console.log('H7 dec+sorted user(\\/→/)=', H7);
+    console.log('GIVEN_HASH                =', givenHash);
+    console.log('H1 dec+sorted             =', H1);
+    console.log('H2 dec+sorted -qid        =', H2);
+    console.log('H7 dec+sorted user(\\/→/) =', H7);
+    console.log('H8 dec+sorted user -qid   =', H8);
+    console.log('H3 raw+sorted             =', H3);
     console.log('D1\n' + D1);
     console.log('D7\n' + D7);
+    console.log('D8\n' + D8);
     // === /DIAG ==============================================================
 
-    // 4) боевой расчёт (пока оставляем базовый вариант)
+    // 4) боевой расчёт — будем использовать тот вариант, который совпадёт.
+    // По умолчанию — D1. Если совпал D7 или D8 — будем доверять ему.
+    let chosen = 'D1', chosenString = D1, chosenHash = H1;
+    if (H7 === givenHash) { chosen = 'D7'; chosenString = D7; chosenHash = H7; }
+    if (H8 === givenHash) { chosen = 'D8'; chosenString = D8; chosenHash = H8; }
+
+    console.log('CHOSEN_VARIANT=', chosen);
+    console.log('CALC_HASH_WEBAPP=', chosenHash);
+
     const secretKey = crypto
       .createHmac('sha256', Buffer.from('WebAppData'))
       .update(Buffer.from(config.botToken, 'utf8'))
@@ -146,21 +143,18 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
     const calcHashWebApp = crypto
       .createHmac('sha256', secretKey)
-      .update(Buffer.from(dataCheckString, 'utf8'))
+      .update(Buffer.from(chosenString, 'utf8'))
       .digest('hex');
 
     console.log('BOT_TOKEN_PREFIX=', (config.botToken || '').slice(0, 10));
     console.log('SECRET_KEY_HEX=', Buffer.from(secretKey).toString('hex'));
-    console.log('CALC_HASH_WEBAPP=', calcHashWebApp);
-    console.log(3);
 
-    // timing-safe сравнение (по базовому варианту)
     if (calcHashWebApp.length !== givenHash.length) {
       return res.status(401).json({ error: 'Invalid initData signature (length mismatch)' });
     }
     const ok = crypto.timingSafeEqual(Buffer.from(calcHashWebApp, 'hex'), Buffer.from(givenHash, 'hex'));
     if (!ok) return res.status(401).json({ error: 'Invalid initData signature' });
-    console.log(4);
+    console.log(3);
 
     // 5) проверяем «свежесть»
     const authDate = Number(params.get('auth_date') || 0);
@@ -198,6 +192,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     console.log(5);
 
     next();
+
 
   } catch (e) {
     console.log(e)
