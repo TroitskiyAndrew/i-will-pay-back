@@ -23,16 +23,16 @@ const auth = async (req, res) => {
     const { user, chat, startParam } = req.telegramData;
     let userFinal = null;
     userFinal = await dataService.getDocumentByQuery("users", { telegramId: user.id });
-    if (userFinal && startParam && userFinal.id !== startParam) {
-      const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam), telegramId: { $exists: false } });
+    if (userFinal && startParam.userId && userFinal.id !== startParam.userId) {
+      const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId), telegramId: { $exists: false } });
       if (guest) {
         await membersService.updateMembers({ userId: guest.id }, { $set: { userId: userFinal.id } });
         await sharesService.updateDocument({ userId: guest.id }, { $set: { userId: userFinal.id } });
         await dataService.deleteDocument("users", guest.id);
       }
     }
-    if (!userFinal && startParam) {
-      userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam) });
+    if (!userFinal && startParam.userId) {
+      userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId) });
       if (userFinal) {
         userFinal.telegramId = user.id
         await dataService.updateDocument("users", userFinal)
