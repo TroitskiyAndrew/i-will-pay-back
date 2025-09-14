@@ -3,12 +3,33 @@ const { ObjectId } = require("mongodb");
 const membersService = require("../services/membersService");
 const sharesService = require("../services/sharesService");
 const roomsService = require("../services/roomsService");
+const socketService = require("../services/socketService");
 
 const createUser = async (req, res) => {
   try {
     const { name, roomId } = req.body;
     const newUser = await dataService.createDocument("users", { name })
     await membersService.createMember({ userId: newUser.id, roomId, name, isAdmin: false, grantedBy: null, isGuest: true });
+    res.status(200).send(true);
+    return;
+  } catch (error) {
+    console.log(error)
+    res.status(500).send(error);
+    return;
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { user } = req.body;
+    const { user: tgUser } = req.telegramData;
+    const storedUser = await dataService.getDocumentByQuery("users", { telegramId: tgUser.id });
+    if(user.id !== storedUser.id){
+      res.status(401).send('Нельзя менять других юзеров');
+      return;
+    }
+    const updatedUser = await dataService.updateDocument("users", user);
+    socketService.sendMessage(updatedUser.id, {action: 'updateUser', user: updatedUser})
     res.status(200).send(true);
     return;
   } catch (error) {
@@ -74,6 +95,7 @@ const auth = async (req, res) => {
 };
 
 module.exports = {
+  updateUser: updateUser,
   createUser: createUser,
   auth: auth,
 };
