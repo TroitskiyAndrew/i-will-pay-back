@@ -3,7 +3,7 @@ const sharesService = require("../services/sharesService");
 
 const createShare = async (req, res) => {
   try {
-    const {share} = req.body;
+    const { share } = req.body;
     const newShare = await sharesService.createShare(share);
     res.status(200).send(newShare);
     return;
@@ -17,7 +17,7 @@ const createShare = async (req, res) => {
 const updateShare = async (req, res) => {
   try {
     const { user } = req.telegramData;
-        const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
+    const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
     await sharesService.updateShare(req.body.share, storedUser.id)
     res.status(200).send(true);
     return;
@@ -31,7 +31,7 @@ const updateShare = async (req, res) => {
 const deleteShare = async (req, res) => {
   try {
     const storedShare = await dataService.getDocument("shares", req.params.shareId);
-    if(!storedShare) {
+    if (!storedShare) {
       res.status(404).send('Доля не найдена');
       return;
     }
@@ -47,7 +47,7 @@ const deleteShare = async (req, res) => {
 
 const getShares = async (req, res) => {
   try {
-    const shares = await dataService.getDocuments("shares", {paymentId: req.params.paymentId})
+    const shares = await dataService.getDocuments("shares", { paymentId: req.params.paymentId })
     res.status(200).send(shares);
     return;
   } catch (error) {

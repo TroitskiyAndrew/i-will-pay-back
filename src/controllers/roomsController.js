@@ -115,7 +115,7 @@ const getRoomState = async (req, res) => {
         i++;
       }
     })
-    const debts = result.filter(res => [res.owner, res.debtor].includes(user.id));
+    const debts = result.filter(res => [res.owner, res.debtor].includes(storedUser.id));
     
     let hasUnsharedPayment = false;
     let unchecked = false;

@@ -6,7 +6,6 @@ const createPayment = async (req, res) => {
     const { user } = req.telegramData;
     const { payment, shares } = req.body;
     const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
-    payment.payer = storedUser.id;
     await paymentsService.createPayment(payment, shares || [], storedUser.id);
     res.status(200).send(true);
     return;
@@ -67,7 +66,7 @@ const getPayments = async (req, res) => {
       res.status(401).send('Вы не состоите в этой группе');
       return;
     }
-    if(member.isGuest) {
+    if(!member.isAdmin) {
       const payments = await dataService.aggregate("payments", [
         {
           $lookup: {
@@ -82,7 +81,8 @@ const getPayments = async (req, res) => {
                       { $eq: ["$paymentId", { $toString: "$$pid" }] },
                       { $or: [
                         { $eq: ["$userId", "$$uid"] },
-                        { $eq: ["$payerId", "$$uid"] }
+                        { $eq: ["$payerId", "$$uid"] },
+                        { $eq: ["$paymentPayer", "$$uid"] }
                       ] }
                     ]
                   }
