@@ -2,21 +2,21 @@ const dataService = require("./mongodb");
 const sharesService = require("./sharesService");
 const socketService = require("./socketService");
 
-async function createPayment(payment, shares) {
+async function createPayment(payment, shares, userId) {
     const newPayment = await dataService.createDocument("payments", payment);
-    await handleShares(shares, newPayment, false);
+    await handleShares(shares, newPayment, userId, false);
     socketService.sendMessage(newPayment.roomId, {action: 'addPayment', payment: newPayment})
     return newPayment;
 }
 
-async function updatePayment(payment, shares) {
+async function updatePayment(payment, shares, userId) {
     const updatedPayment = await dataService.updateDocument("payments", payment);
-    await handleShares(shares, updatedPayment);
+    await handleShares(shares,updatedPayment, userId );
     socketService.sendMessage(updatedPayment.roomId, {action: 'updatePayment', payment: updatedPayment})
     return updatedPayment;
 }
 
-async function handleShares(shares, payment, notify = true) {
+async function handleShares(shares, payment, userId, notify = true) {
     for (const share of shares){
         share.paymentId = payment.id;
         share.roomId = payment.roomId;
@@ -26,7 +26,7 @@ async function handleShares(shares, payment, notify = true) {
             if(isEmpty){
                 await sharesService.deleteShare(share.id)
             } else {
-                await sharesService.updateShare(share)
+                await sharesService.updateShare(share, userId)
             }
         } else if(!isEmpty){
             await sharesService.createShare(share, notify)

@@ -7,7 +7,7 @@ const createPayment = async (req, res) => {
     const { payment, shares } = req.body;
     const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
     payment.payer = storedUser.id;
-    await paymentsService.createPayment(payment, shares || []);
+    await paymentsService.createPayment(payment, shares || [], storedUser.id);
     res.status(200).send(true);
     return;
   } catch (error) {
@@ -26,7 +26,7 @@ const updatePayment = async (req, res) => {
     if (payment.amount !== storedPayment.amount && storedPayment.payer !== storedUser.id) {
       throw new Error('Нельзя редактировать чужие платежи')
     }
-    await paymentsService.updatePayment(payment, shares || []);
+    await paymentsService.updatePayment(payment, shares || [], storedUser.id);
     res.status(200).send(true);
     return;
   } catch (error) {

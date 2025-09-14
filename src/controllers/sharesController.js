@@ -16,7 +16,9 @@ const createShare = async (req, res) => {
 
 const updateShare = async (req, res) => {
   try {
-    await sharesService.updateShare(req.body.share)
+    const { user } = req.telegramData;
+        const storedUser = await dataService.getDocumentByQuery("users", { telegramId: user.id });
+    await sharesService.updateShare(req.body.share, storedUser.id)
     res.status(200).send(true);
     return;
   } catch (error) {
