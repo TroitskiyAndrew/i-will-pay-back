@@ -48,7 +48,9 @@ const auth = async (req, res) => {
       const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId), telegramId: { $exists: false } });
       if (guest) {
         await membersService.updateMembers({ userId: guest.id }, { $set: { userId: userFinal.id } });
-        await sharesService.updateDocument({ userId: guest.id }, { $set: { userId: userFinal.id } });
+        await dataService.updateDocuments("shares", { userId: guest.id }, { $set: { userId: userFinal.id } });
+        await dataService.updateDocuments("shares", { payer: guest.id }, { $set: { payer: userFinal.id } });
+        await dataService.updateDocuments("payments", { payer: guest.id }, { $set: { payer: userFinal.id } });
         await dataService.deleteDocument("users", guest.id);
       }
     }

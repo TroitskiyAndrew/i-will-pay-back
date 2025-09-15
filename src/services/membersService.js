@@ -6,7 +6,6 @@ const socketService = require("./socketService");
 async function createMember(member) {
     const newMember = await dataService.createDocument("members",member);
     const room = await dataService.getDocumentByQuery("rooms", {_id: new ObjectId(newMember.roomId)})
-    console.log('newMember', newMember.roomId);
     socketService.sendMessage(newMember.roomId, {action: 'addMember', member: newMember})
     socketService.sendMessage(newMember.userId, {action: 'addRoom', room})
     return newMember;

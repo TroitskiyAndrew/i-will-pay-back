@@ -20,6 +20,7 @@ socketService.initSocket(server)
 
 const telegramInitDataMiddleware = (req, res, next) => {
   try {
+
     if (!config.prod) {
       // ToDo для локального тестирования
       req.telegramData = { user: { id: 999, first_name: 'Новичок' }, chat: { id: 555, title: 'test' }, startParam: null }
@@ -41,7 +42,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     }
 
     req.telegramData = parse(raw);
-    const startParam = [req.telegramData.startParam || ''].split('&').reduce((result, param) => {
+    const startParam = (req.telegramData.startParam || '').split('&').reduce((result, param) => {
       const [key, value] = param.split('=');
       res[key] = value;
       return res;
