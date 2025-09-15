@@ -41,11 +41,11 @@ const updateUser = async (req, res) => {
 
 const auth = async (req, res) => {
   try {
-    const { user, chat, startParam } = req.telegramData;
+    const { user, chat, params } = req.telegramData;
     let userFinal = null;
     userFinal = await dataService.getDocumentByQuery("users", { telegramId: user.id });
-    if (userFinal && startParam?.userId && userFinal.id !== startParam.userId) {
-      const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId), telegramId: { $exists: false } });
+    if (userFinal && params?.userId && userFinal.id !== params.userId) {
+      const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(params.userId), telegramId: { $exists: false } });
       if (guest) {
         await membersService.updateMembers({ userId: guest.id }, { $set: { userId: userFinal.id } });
         await dataService.updateDocuments("shares", { userId: guest.id }, { $set: { userId: userFinal.id } });
@@ -54,8 +54,8 @@ const auth = async (req, res) => {
         await dataService.deleteDocument("users", guest.id);
       }
     }
-    if (!userFinal && startParam?.userId) {
-      userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId) });
+    if (!userFinal && params?.userId) {
+      userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(params.userId) });
       if (userFinal) {
         userFinal.telegramId = user.id
         await dataService.updateDocument("users", userFinal)
@@ -87,6 +87,7 @@ const auth = async (req, res) => {
       }
       roomId = room?.id || null
     }
+    
     res.status(200).send({ user: userFinal, roomId });
     return;
   } catch (error) {

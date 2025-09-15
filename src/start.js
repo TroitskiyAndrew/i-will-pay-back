@@ -47,7 +47,6 @@ const telegramInitDataMiddleware = (req, res, next) => {
       result[key] = value;
       return result;
     } , {}) 
-    console.log('________params',telegramData.params)
     req.telegramData = telegramData;
     next();
 
