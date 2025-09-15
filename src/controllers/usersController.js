@@ -87,6 +87,24 @@ const auth = async (req, res) => {
       }
       roomId = room?.id || null
     }
+    if (params.roomId) {
+      let room = await dataService.getDocument("rooms", params.roomId)
+      if (room)  {
+        const member = await dataService.getDocumentByQuery("members", { userId: userFinal.id, roomId: room.id });
+        if (!member) {
+          await membersService.createMember({
+            userId: userFinal.id,
+            roomId: room.id,
+            name: userFinal.name,
+            isAdmin: false,
+            grantedBy: null,
+            isGuest: false,
+            payer: userFinal.id
+          })
+        } 
+      }
+      roomId = room?.id || null
+    }
     
     res.status(200).send({ user: userFinal, roomId });
     return;
