@@ -48,7 +48,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
       return res;
     } , {}) 
     req.telegramData.startParam = startParam;
-    console.log(req.telegramData.startParam)
+    console.log('________startParam',req.telegramData.startParam.key)
     next();
 
 
