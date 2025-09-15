@@ -42,14 +42,13 @@ const telegramInitDataMiddleware = (req, res, next) => {
     }
 
     const telegramData = parse(raw);
-    console.log('________telegramData', telegramData)
-    const params = (telegramData.start_param || '').split('&').reduce((result, param) => {
+    telegramData.params = (telegramData.start_param || '').split('&').reduce((result, param) => {
       const [key, value] = param.split('=');
       result[key] = value;
       return result;
     } , {}) 
-    console.log('________params',params)
-    req.telegramData.params = params;
+    console.log('________params',telegramData.params)
+    req.telegramData = telegramData;
     next();
 
 
