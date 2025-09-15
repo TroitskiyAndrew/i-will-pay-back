@@ -52,7 +52,7 @@ const auth = async (req, res) => {
         await dataService.deleteDocument("users", guest.id);
       }
     }
-    if (!userFinal && startParam.userId) {
+    if (!userFinal && startParam?.userId) {
       userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(startParam.userId) });
       if (userFinal) {
         userFinal.telegramId = user.id
