@@ -23,7 +23,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
     if (!config.prod) {
       // ToDo для локального тестирования
-      req.telegramData = { user: { id: 999, first_name: 'Новичок' }, chat: { id: 555, title: 'test' }, startParam: null }
+      req.telegramData = { user: { id: 999, first_name: 'Новичок' }, chat: { id: 555, title: 'test' }, params: {} }
       next();
       return;
     }
@@ -63,6 +63,7 @@ app.use(cors({ origin: config.frontURL, credentials: true }));
 app.use(telegramInitDataMiddleware);
 
 app.get("/auth", usersController.auth);
+app.get("/users/:userId", usersController.getUser);
 app.post("/users", usersController.createUser);
 app.put("/users", usersController.updateUser);
 

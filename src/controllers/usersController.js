@@ -19,6 +19,19 @@ const createUser = async (req, res) => {
   }
 };
 
+const getUser = async (req, res) => {
+  try {
+    const user = await dataService.getDocument("users", req.params.userId);
+    console.log(user)
+    res.status(200).send(user);
+    return;
+  } catch (error) {
+    console.log(error)
+    res.status(500).send(error);
+    return;
+  }
+};
+
 const updateUser = async (req, res) => {
   try {
     const { user } = req.body;
@@ -116,6 +129,7 @@ const auth = async (req, res) => {
 };
 
 module.exports = {
+  getUser: getUser,
   updateUser: updateUser,
   createUser: createUser,
   auth: auth,
