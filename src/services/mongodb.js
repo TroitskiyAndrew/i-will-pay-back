@@ -59,7 +59,7 @@ const createDocuments = async (collectionName, docs) => {
         const res = await collection.insertMany(docs);
         // ToDo Получить айдишки созданных записей
         const insertedIds = [];
-        console.log('createDocuments', res);
+        
         const newDocuments = await collection.find({ _id: { $in: insertedIds } }).toArray();
         result = newDocuments.map(mapDocumentFromMongo);
     } catch (err) {
