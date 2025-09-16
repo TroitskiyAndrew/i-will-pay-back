@@ -23,7 +23,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
     if (!config.prod) {
       // ToDo для локального тестирования
-      req.telegramData = { user: { id: 999, first_name: 'Новичок' }, chat: { id: 555, title: 'test' }, params: {} }
+      req.telegramData = { user: { id: 111, first_name: 'Андрец' }, chat: null, params: {} }
       next();
       return;
     }

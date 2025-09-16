@@ -68,7 +68,7 @@ const auth = async (req, res) => {
       }
     }
     if (!userFinal && params?.userId) {
-      userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(params.userId) });
+      userFinal = await dataService.getDocumentByQuery("users", { _id: new ObjectId(params.userId), telegramId: { $exists: false } });
       if (userFinal) {
         userFinal.telegramId = user.id
         await dataService.updateDocument("users", userFinal)
