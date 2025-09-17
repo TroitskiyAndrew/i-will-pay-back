@@ -31,6 +31,7 @@ const handleWebhook = async (req, res) => {
       }
       if (action === 'muteMember') {
         const member = await dataService.getDocument("member", value);
+        console.log(data, value)
         if (!member.mute) {
           member.mute = true;
           await membersService.updateMembers([member])
@@ -65,7 +66,7 @@ const handleWebhook = async (req, res) => {
 
       await axios.post(`${config.tgApiUrl}/answerCallbackQuery`, {
         callback_query_id: cq.id,
-        text: 'Спасибо! '
+        text: 'Спасибо!'
       });
 
 
