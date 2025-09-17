@@ -22,7 +22,6 @@ const createUser = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await dataService.getDocument("users", req.params.userId);
-    console.log(user)
     res.status(200).send(user);
     return;
   } catch (error) {
