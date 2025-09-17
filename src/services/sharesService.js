@@ -99,10 +99,11 @@ async function senMessageAboutUpdateShare(userId, payment, share) {
             text = `В платеже ${paymentMember.name} ` + text;
             text += `\n${shareMember.userId === userId ? 'моя доля' : 'доля ' + shareMember.name} составляет ${share.balance}`
         }
+        const userMember = await dataService.getDocumentByQuery('members', { userId, roomId: payment.roomId }); 
         const reply_markup = { inline_keyboard: [[
             {
                 text: 'Отключить уведомления',
-                callback_data: `muteMember=${member.id}`
+                callback_data: `muteMember=${userMember.id}`
             }
         ], []] };
         const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}${config.splitParams}paymentId=${payment.id}`
