@@ -24,10 +24,10 @@ const telegramInitDataMiddleware = (req, res, next) => {
     if (!config.prod) {
       // ToDo для локального тестирования
       req.telegramData = { user: { id: 111, first_name: 'Тестовый юзер' }, chat: null, params: {} }
-      req.telegramData.params = {
-        roomId: '68ca60d0d9b5a5738bcde91e',
-        paymentId: '68ca893b62761dbcf40a4e64'
-      }
+      // req.telegramData.params = {
+      //   roomId: '68ca60d0d9b5a5738bcde91e',
+      //   paymentId: '68ca893b62761dbcf40a4e64'
+      // }
       next();
       return;
     }
@@ -44,9 +44,8 @@ const telegramInitDataMiddleware = (req, res, next) => {
     if(!isInitDataValid){
       return res.status(401).json({ error: 'initData invalid' });
     }
-
     const telegramData = parse(raw);
-    telegramData.params = (telegramData.start_param || '').split('&').reduce((result, param) => {
+    telegramData.params = (telegramData.start_param || '').split('_SPLIT_').reduce((result, param) => {
       const [key, value] = param.split('=');
       result[key] = value;
       return result;
