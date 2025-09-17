@@ -16,19 +16,38 @@ const handleWebhook = async (req, res) => {
       const chat_id = cq.message.chat.id;
       const [action, value] = data.split('=');
       const user = await dataService.getDocumentByQuery("users", { telegramId: cq.from.id });
+      let responseText = 'Спасибо'
       if (action === 'acceptShareByPayer') {
         const share = await dataService.getDocument("shares", value);
         if (!share.confirmedByPayer) {
           share.confirmedByPayer = true;
-          await sharesService.updateShare(share, user.id)
+          await sharesService.updateShare(share, user.id);
+          const reply_markup = cq.message.reply_markup;
+          reply_markup.inline_keyboard[1] = [reply_markup.inline_keyboard[1][0]]
+          await axios.post(`${config.tgApiUrl}/editMessageText`, {
+            chat_id,
+            message_id: cq.message.message_id,
+            text: cq.message.text,
+            reply_markup,
+          });
         }
+        responseText = 'Сумма подтверждена'
       }
       if (action === 'acceptShareByUser') {
         const share = await dataService.getDocument("shares", value);
         if (!share.confirmedByUser) {
           share.confirmedByUser = true;
-          await sharesService.updateShare(share, user.id)
+          await sharesService.updateShare(share, user.id);
+          const reply_markup = cq.message.reply_markup;
+          reply_markup.inline_keyboard[1] = [reply_markup.inline_keyboard[1][0]]
+          await axios.post(`${config.tgApiUrl}/editMessageText`, {
+            chat_id,
+            message_id: cq.message.message_id,
+            text: cq.message.text,
+            reply_markup,
+          });
         }
+        responseText = 'Сумма подтверждена'
       }
       if (action === 'muteMember') {
         const member = await dataService.getDocument("members", value);
@@ -47,6 +66,7 @@ const handleWebhook = async (req, res) => {
             reply_markup,
           });
         };
+        responseText = 'Уведомления отключены'
       }
       if (action === 'unmuteMember') {
         const member = await dataService.getDocument("members", value);
@@ -56,18 +76,19 @@ const handleWebhook = async (req, res) => {
             text: 'Отключить уведомления',
             callback_data: `muteMember=${member.id}`
           }
-          await axios.post(`${TG_API}/editMessageText`, {
+          await axios.post(`${config.tgApiUrl}/editMessageText`, {
             chat_id,
             message_id: cq.message.message_id,
             text: cq.message.text,
             reply_markup,
           });
         }
+        responseText = 'Уведомления включены'
       }
 
       await axios.post(`${config.tgApiUrl}/answerCallbackQuery`, {
         callback_query_id: cq.id,
-        text: 'Спасибо!'
+        text: responseText
       });
 
 
