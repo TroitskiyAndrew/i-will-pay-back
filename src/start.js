@@ -64,6 +64,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
 
 app.use(express.json());
 app.use(cors({ origin: config.frontURL, credentials: true }));
+app.post("/webhook", webhookController.handleWebhook);
 app.use(telegramInitDataMiddleware);
 
 
@@ -93,7 +94,7 @@ app.put("/shares", sharesController.updateShare);
 app.delete("/shares/:shareId", sharesController.deleteShare);
 
 
-app.post("/webhook", webhookController.handleWebhook);
+
 
 
 server.listen(config.port, () => {
