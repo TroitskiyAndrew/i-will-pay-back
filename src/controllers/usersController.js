@@ -60,7 +60,7 @@ const auth = async (req, res) => {
     if (userFinal && params?.userId && userFinal.id !== params.userId) {
       const guest = await dataService.getDocumentByQuery("users", { _id: new ObjectId(params.userId), telegramId: { $exists: false } });
       if (guest) {
-        await membersService.updateMembers({ userId: guest.id }, { $set: { userId: userFinal.id } });
+        await membersService.updateMembers({ userId: guest.id }, { $set: { userId: userFinal.id, payer: userFinal.id } });
         await dataService.updateDocuments("shares", { userId: guest.id }, { $set: { userId: userFinal.id } });
         await dataService.updateDocuments("shares", { payer: guest.id }, { $set: { payer: userFinal.id } });
         await dataService.updateDocuments("payments", { payer: guest.id }, { $set: { payer: userFinal.id } });
