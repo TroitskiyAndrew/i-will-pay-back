@@ -94,7 +94,7 @@ async function senMessageAboutUpdateShare(userId, payment, share) {
         let text = `${payment.amount}${payment.comment ? '/' + payment.comment : ''} от ${payment.date}`;
         if(userId === payment.payer){
             text = 'В моем платеже ' + text;
-            text += `\nдоля ${shareMember.name} составляет ${shareMember.balance}`
+            text += `\nдоля ${shareMember.name} составляет ${share.balance}`
         } else {
             const paymentMember = await dataService.getDocumentByQuery('members', { userId: payment.payer, roomId: payment.roomId }); 
             text = `В платеже ${paymentMember.name} ` + text;
