@@ -3,6 +3,7 @@ const sharesService = require("../services/sharesService");
 const membersService = require("../services/membersService");
 const config = require("../config/config");
 const axios = require("axios");
+const { ObjectId } = require("mongodb");
 
 const handleWebhook = async (req, res) => {
   try {
@@ -33,8 +34,7 @@ const handleWebhook = async (req, res) => {
         const member = await dataService.getDocument("members", value);
         console.log(member, value)
         if (!member.mute) {
-          member.mute = true;
-          await membersService.updateMembers([member])
+          await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: true}})
           const reply_markup = cq.message.reply_markup;
           reply_markup.inline_keyboard[0][0] = {
             text: 'Включить уведомления',
@@ -50,8 +50,7 @@ const handleWebhook = async (req, res) => {
       if (action === 'unmuteMember') {
         const member = await dataService.getDocument("members", value);
         if (member.mute) {
-          member.mute = false;
-          await membersService.updateMembers([member]);
+          await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: false}})
           reply_markup.inline_keyboard[0][0] = {
             text: 'Отключить уведомления',
             callback_data: `muteMember=${member.id}`
