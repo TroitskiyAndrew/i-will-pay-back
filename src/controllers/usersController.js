@@ -117,7 +117,7 @@ const auth = async (req, res) => {
       }
       roomId = room?.id || null
     }
-    console.log('params', params)
+    
     res.status(200).send({ user: userFinal, roomId, paymentId: params.paymentId || null });
     return;
   } catch (error) {
