@@ -39,7 +39,7 @@ const handleWebhook = async (req, res) => {
             text: 'Включить уведомления',
             callback_data: `unmuteMember=${member.id}`
           }
-          await axios.post(`${TG_API}/editMessageText`, {
+          await axios.post(`${config.tgApiUrl}/editMessageText`, {
             chat_id,
             message_id: cq.message.message_id,
             reply_markup,
