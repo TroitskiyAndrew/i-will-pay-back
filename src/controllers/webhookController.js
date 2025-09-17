@@ -31,6 +31,7 @@ const handleWebhook = async (req, res) => {
       }
       if (action === 'muteMember') {
         const member = await dataService.getDocument("members", value);
+        console.log(member, value)
         if (!member.mute) {
           member.mute = true;
           await membersService.updateMembers([member])
