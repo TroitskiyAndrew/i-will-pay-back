@@ -29,7 +29,7 @@ async function handleShares(shares, payment, userId, notify = true) {
                 await sharesService.updateShare(share, userId)
             }
         } else if(!isEmpty){
-            await sharesService.createShare(share, notify)
+            await sharesService.createShare(share, payment, notify)
         }
         
     }

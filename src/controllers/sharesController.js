@@ -1,19 +1,6 @@
 const dataService = require("../services/mongodb");
 const sharesService = require("../services/sharesService");
 
-const createShare = async (req, res) => {
-  try {
-    const { share } = req.body;
-    const newShare = await sharesService.createShare(share);
-    res.status(200).send(newShare);
-    return;
-  } catch (error) {
-    console.log(error)
-    res.status(500).send(error);
-    return;
-  }
-};
-
 const updateShare = async (req, res) => {
   try {
     const { user } = req.telegramData;
@@ -59,7 +46,6 @@ const getShares = async (req, res) => {
 
 
 module.exports = {
-  createShare: createShare,
   updateShare: updateShare,
   deleteShare: deleteShare,
   getShares: getShares,

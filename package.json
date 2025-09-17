@@ -19,6 +19,7 @@
   "description": "",
   "dependencies": {
     "@telegram-apps/init-data-node": "^2.0.10",
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.7",

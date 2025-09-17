@@ -24,6 +24,10 @@ const telegramInitDataMiddleware = (req, res, next) => {
     if (!config.prod) {
       // ToDo для локального тестирования
       req.telegramData = { user: { id: 111, first_name: 'Тестовый юзер' }, chat: null, params: {} }
+      req.telegramData.params = {
+        roomId: '68ca60d0d9b5a5738bcde91e',
+        paymentId: '68ca893b62761dbcf40a4e64'
+      }
       next();
       return;
     }
@@ -83,7 +87,6 @@ app.put("/rooms", roomsController.updateRoom);
 app.get("/state/:roomId", roomsController.getRoomState);
 
 app.get("/shares/:paymentId", sharesController.getShares);
-app.post("/shares", sharesController.createShare);
 app.put("/shares", sharesController.updateShare);
 app.delete("/shares/:shareId", sharesController.deleteShare);
 
