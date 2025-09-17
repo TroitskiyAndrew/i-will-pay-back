@@ -93,7 +93,7 @@ app.put("/shares", sharesController.updateShare);
 app.delete("/shares/:shareId", sharesController.deleteShare);
 
 
-app.get("/webhook", webhookController.handleWebhook);
+app.post("/webhook", webhookController.handleWebhook);
 
 
 server.listen(config.port, () => {
