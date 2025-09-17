@@ -21,26 +21,31 @@ async function senMessageAboutNewShare(userId, payment, newShare) {
     const user = await dataService.getDocument('users', userId);
     const memberPayer = await dataService.getDocumentByQuery('members', { userId: payment.payer, roomId: payment.roomId });
     const member = await dataService.getDocumentByQuery('members', { userId, roomId: payment.roomId });
-    if (user.telegramId && user.id !== payment.payer) {
+    if (user.telegramId && !user.mute && user.id !== payment.payer) {
         let text = `${memberPayer.name} заплатил ${payment.amount}${payment.comment ? '/' + payment.comment : ''}`
         if (newShare.balance > 0) {
             text += `\nЗа ${member.userId === newShare.userId ? 'вас' : member.name} - ${newShare.balance}`;
         } else {
             text += `\nУкажите, сколько за ${member.userId === newShare.userId ? 'вас' : member.name}`
         }
-        const reply_markup = { inline_keyboard: [[]] };
+        const reply_markup = { inline_keyboard: [[
+            {
+                text: 'Отключить уведомления',
+                callback_data: `muteMember=${member.id}`
+            }
+        ], []] };
         const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}${config.splitParams}paymentId=${payment.id}`
         if (newShare.balance > 0) {
-            reply_markup.inline_keyboard[0].push({
+            reply_markup.inline_keyboard[1].push({
                 text: 'Посмотреть платеж',
                 url,
             })
-            reply_markup.inline_keyboard[0].push({
+            reply_markup.inline_keyboard[1].push({
                 text: 'Подтвердить сумму',
                 callback_data: `acceptShareByUser=${newShare.id}`
             })
         } else {
-            reply_markup.inline_keyboard[0].push({
+            reply_markup.inline_keyboard[1].push({
                 text: 'Открыть платеж',
                 url,
             })
@@ -84,7 +89,7 @@ async function updateShare(share, currentUserId) {
 async function senMessageAboutUpdateShare(userId, payment, share) {
     const user = await dataService.getDocument('users', userId);
     const shareMember = await dataService.getDocumentByQuery('members', { userId: share.userId, roomId: payment.roomId });
-    if (user.telegramId) {
+    if (user.telegramId && !user.mute) {
         let text = `${payment.amount}${payment.comment ? '/' + payment.comment : ''} от ${payment.date}`;
         if(userId === payment.payer){
             text = 'В моем платеже ' + text;
@@ -94,19 +99,24 @@ async function senMessageAboutUpdateShare(userId, payment, share) {
             text = `В платеже ${paymentMember.name} ` + text;
             text += `\n${shareMember.userId === userId ? 'моя доля' : 'доля ' + shareMember.name} составляет ${share.balance}`
         }
-        const reply_markup = { inline_keyboard: [[]] };
+        const reply_markup = { inline_keyboard: [[
+            {
+                text: 'Отключить уведомления',
+                callback_data: `muteMember=${member.id}`
+            }
+        ], []] };
         const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}${config.splitParams}paymentId=${payment.id}`
-        reply_markup.inline_keyboard[0].push({
+        reply_markup.inline_keyboard[1].push({
             text: 'Посмотреть платеж',
             url,
         })
         if (userId === payment.payer) {
-            reply_markup.inline_keyboard[0].push({
+            reply_markup.inline_keyboard[1].push({
                 text: 'Подтвердить сумму',
                 callback_data: `acceptShareByPayer=${share.id}`
             })
         } else {
-            reply_markup.inline_keyboard[0].push({
+            reply_markup.inline_keyboard[1].push({
                 text: 'Подтвердить сумму',
                 callback_data: `acceptShareByUser=${share.id}`
             })
