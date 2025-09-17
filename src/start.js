@@ -9,6 +9,7 @@ const membersController = require("./controllers/membersController");
 const paymentsController = require("./controllers/paymentsController");
 const roomsController = require("./controllers/roomsController");
 const sharesController = require("./controllers/sharesController");
+const webhookController = require("./controllers/webhookController");
 const socketService = require("./services/socketService");
 
 const MAX_AGE_SECONDS = 24 * 60 * 60; // 24 часа
@@ -65,6 +66,8 @@ app.use(express.json());
 app.use(cors({ origin: config.frontURL, credentials: true }));
 app.use(telegramInitDataMiddleware);
 
+
+
 app.get("/auth", usersController.auth);
 app.get("/users/:userId", usersController.getUser);
 app.post("/users", usersController.createUser);
@@ -89,6 +92,8 @@ app.get("/shares/:paymentId", sharesController.getShares);
 app.put("/shares", sharesController.updateShare);
 app.delete("/shares/:shareId", sharesController.deleteShare);
 
+
+app.get("/webhook", webhookController.handleWebhook);
 
 
 server.listen(config.port, () => {

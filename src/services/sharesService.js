@@ -30,7 +30,6 @@ async function senMessageAboutNewShare(userId, payment, newShare) {
         }
         const reply_markup = { inline_keyboard: [[]] };
         const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}${config.splitParams}paymentId=${payment.id}`
-        console.log(url)
         if (newShare.balance > 0) {
             reply_markup.inline_keyboard[0].push({
                 text: 'Посмотреть платеж',
