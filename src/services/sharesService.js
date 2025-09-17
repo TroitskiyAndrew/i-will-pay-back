@@ -37,7 +37,7 @@ async function senMessageAboutNewShare(userId, payment, newShare) {
             })
             reply_markup.inline_keyboard[0].push({
                 text: 'Подтвердить сумму',
-                callback_data: `acceptShareByUser&${newShare.id}`
+                callback_data: `acceptShareByUser=${newShare.id}`
             })
         } else {
             reply_markup.inline_keyboard[0].push({
@@ -103,12 +103,12 @@ async function senMessageAboutUpdateShare(userId, payment, share) {
         if (userId === payment.payer) {
             reply_markup.inline_keyboard[0].push({
                 text: 'Подтвердить сумму',
-                callback_data: `acceptShareByPayer&${share.id}`
+                callback_data: `acceptShareByPayer=${share.id}`
             })
         } else {
             reply_markup.inline_keyboard[0].push({
                 text: 'Подтвердить сумму',
-                callback_data: `acceptShareByUser&${share.id}`
+                callback_data: `acceptShareByUser=${share.id}`
             })
         }
         await messageService.sendMessage(user.telegramId, text, reply_markup)
