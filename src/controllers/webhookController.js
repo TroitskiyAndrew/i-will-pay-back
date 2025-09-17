@@ -12,8 +12,8 @@ const handleWebhook = async (req, res) => {
     if (update.callback_query) {
       const cq = update.callback_query;
       const data = cq.data;
-      console.log(cq.message.reply_markup)
       const chat_id = cq.message.chat.id;
+      const reply_markup = cq.message.reply_markup;
       const [action, value] = data.split('=');
       const user = await dataService.getDocumentByQuery("users", { telegramId: cq.from.id });
       let responseText = 'Спасибо'
@@ -22,15 +22,14 @@ const handleWebhook = async (req, res) => {
         if (!share.confirmedByPayer) {
           share.confirmedByPayer = true;
           await sharesService.updateShare(share, user.id);
-          const reply_markup = cq.message.reply_markup;
-          reply_markup.inline_keyboard[1] = [reply_markup.inline_keyboard[1][0]]
-          await axios.post(`${config.tgApiUrl}/editMessageText`, {
-            chat_id,
-            message_id: cq.message.message_id,
-            text: cq.message.text,
-            reply_markup,
-          });
         }
+        reply_markup.inline_keyboard[1] = [reply_markup.inline_keyboard[1][0]]
+        await axios.post(`${config.tgApiUrl}/editMessageText`, {
+          chat_id,
+          message_id: cq.message.message_id,
+          text: cq.message.text,
+          reply_markup,
+        });
         responseText = 'Сумма подтверждена'
       }
       if (action === 'acceptShareByUser') {
@@ -38,15 +37,14 @@ const handleWebhook = async (req, res) => {
         if (!share.confirmedByUser) {
           share.confirmedByUser = true;
           await sharesService.updateShare(share, user.id);
-          const reply_markup = cq.message.reply_markup;
-          reply_markup.inline_keyboard[1] = [reply_markup.inline_keyboard[1][0]]
-          await axios.post(`${config.tgApiUrl}/editMessageText`, {
-            chat_id,
-            message_id: cq.message.message_id,
-            text: cq.message.text,
-            reply_markup,
-          });
         }
+        reply_markup.inline_keyboard[1] = [reply_markup.inline_keyboard[1][0]]
+        await axios.post(`${config.tgApiUrl}/editMessageText`, {
+          chat_id,
+          message_id: cq.message.message_id,
+          text: cq.message.text,
+          reply_markup,
+        });
         responseText = 'Сумма подтверждена'
       }
       if (action === 'muteMember') {
@@ -54,35 +52,35 @@ const handleWebhook = async (req, res) => {
         console.log(member, value)
         if (!member.mute) {
           await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: true}})
-          const reply_markup = cq.message.reply_markup;
-          reply_markup.inline_keyboard[0][0] = {
-            text: 'Включить уведомления',
-            callback_data: `unmuteMember=${member.id}`
-          }
-          await axios.post(`${config.tgApiUrl}/editMessageText`, {
-            chat_id,
-            message_id: cq.message.message_id,
-            text: cq.message.text,
-            reply_markup,
-          });
         };
+        
+        reply_markup.inline_keyboard[0][0] = {
+          text: 'Включить уведомления',
+          callback_data: `unmuteMember=${member.id}`
+        }
+        await axios.post(`${config.tgApiUrl}/editMessageText`, {
+          chat_id,
+          message_id: cq.message.message_id,
+          text: cq.message.text,
+          reply_markup,
+        });
         responseText = 'Уведомления отключены'
       }
       if (action === 'unmuteMember') {
         const member = await dataService.getDocument("members", value);
         if (member.mute) {
           await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: false}})
-          reply_markup.inline_keyboard[0][0] = {
-            text: 'Отключить уведомления',
-            callback_data: `muteMember=${member.id}`
-          }
-          await axios.post(`${config.tgApiUrl}/editMessageText`, {
-            chat_id,
-            message_id: cq.message.message_id,
-            text: cq.message.text,
-            reply_markup,
-          });
         }
+        reply_markup.inline_keyboard[0][0] = {
+          text: 'Отключить уведомления',
+          callback_data: `muteMember=${member.id}`
+        }
+        await axios.post(`${config.tgApiUrl}/editMessageText`, {
+          chat_id,
+          message_id: cq.message.message_id,
+          text: cq.message.text,
+          reply_markup,
+        });
         responseText = 'Уведомления включены'
       }
 
