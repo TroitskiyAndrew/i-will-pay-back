@@ -30,8 +30,7 @@ const handleWebhook = async (req, res) => {
         }
       }
       if (action === 'muteMember') {
-        const member = await dataService.getDocument("member", value);
-        console.log(data, value)
+        const member = await dataService.getDocument("members", value);
         if (!member.mute) {
           member.mute = true;
           await membersService.updateMembers([member])
@@ -48,7 +47,7 @@ const handleWebhook = async (req, res) => {
         };
       }
       if (action === 'unmuteMember') {
-        const member = await dataService.getDocument("member", value);
+        const member = await dataService.getDocument("members", value);
         if (member.mute) {
           member.mute = false;
           await membersService.updateMembers([member]);
