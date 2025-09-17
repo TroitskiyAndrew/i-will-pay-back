@@ -99,6 +99,7 @@ const auth = async (req, res) => {
       }
       roomId = room?.id || null
     }
+    console.log('_______________________params', params)
     if (params.roomId) {
       let room = await dataService.getDocument("rooms", params.roomId)
       if (room)  {
@@ -117,7 +118,7 @@ const auth = async (req, res) => {
       }
       roomId = room?.id || null
     }
-    console.log('_______________________params', params)
+    
     res.status(200).send({ user: userFinal, roomId, paymentId: params.paymentId || null });
     return;
   } catch (error) {
