@@ -37,7 +37,7 @@ async function senMessageAboutNewShare(userId, payment, newShare) {
             })
             reply_markup.inline_keyboard[0].push({
                 text: 'Подтвердить сумму',
-                callback_data: `acceptShare&${newShare.id}`
+                callback_data: `acceptShareByUser&${newShare.id}`
             })
         } else {
             reply_markup.inline_keyboard[0].push({
