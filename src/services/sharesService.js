@@ -1,6 +1,7 @@
 const dataService = require("./mongodb");
 const socketService = require("./socketService");
 const messageService = require("./messageService");
+const config = require("../config/config");
 
 async function createShare(share, payment, notify = true) {
     const newShare = await dataService.createDocument("shares", share);
@@ -28,7 +29,7 @@ async function senMessageAboutNewShare(userId, payment, newShare) {
             text += `\nУкажите, сколько за ${member.userId === newShare.userId ? 'вас' : member.name}`
         }
         const reply_markup = { inline_keyboard: [[]] };
-        const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}_SPLIT_paymentId=${payment.id}`
+        const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}${config.splitParams}paymentId=${payment.id}`
         console.log(url)
         if (newShare.balance > 0) {
             reply_markup.inline_keyboard[0].push({
@@ -95,7 +96,7 @@ async function senMessageAboutUpdateShare(userId, payment, share) {
             text += `\n${shareMember.userId === userId ? 'моя доля' : 'доля ' + shareMember.name} составляет ${share.balance}`
         }
         const reply_markup = { inline_keyboard: [[]] };
-        const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}_SPLIT_paymentId=${payment.id}`
+        const url = `https://t.me/I_WillPay_bot?startapp=roomId=${payment.roomId}${config.splitParams}paymentId=${payment.id}`
         reply_markup.inline_keyboard[0].push({
             text: 'Посмотреть платеж',
             url,

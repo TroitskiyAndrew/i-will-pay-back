@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 module.exports = {
+    splitParams: '_SPLIT_',
     port: process.env.PORT,
     mongodbConnectionString: process.env.MONGODB_CONNECTION_STRING || '',
     frontURL: process.env.FRONT_URL || "*",

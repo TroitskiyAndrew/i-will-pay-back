@@ -45,13 +45,11 @@ const telegramInitDataMiddleware = (req, res, next) => {
       return res.status(401).json({ error: 'initData invalid' });
     }
     const telegramData = parse(raw);
-    console.log('____________start_param', telegramData.start_param)
-    telegramData.params = (telegramData.start_param || '').split('_SPLIT_PARAMS_').reduce((result, param) => {
+    telegramData.params = (telegramData.start_param || '').split(config.splitParams).reduce((result, param) => {
       const [key, value] = param.split('=');
       result[key] = value;
       return result;
     } , {}) 
-    console.log('____________params',telegramData.params)
     req.telegramData = telegramData;
     next();
 
