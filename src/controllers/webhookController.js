@@ -36,30 +36,12 @@ const handleWebhook = async (req, res) => {
         if (!member.mute) {
           await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: true}})
           const reply_markup = cq.message.reply_markup;
-          reply_markup.inline_keyboard[0][0] = {
-            text: 'Включить уведомления',
-            callback_data: `unmuteMember=${member.id}`
-          }
-          await axios.post(`${config.tgApiUrl}/editMessageText`, {
-            chat_id,
-            message_id: cq.message.message_id,
-            reply_markup,
-          });
         };
       }
       if (action === 'unmuteMember') {
         const member = await dataService.getDocument("members", value);
         if (member.mute) {
           await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: false}})
-          reply_markup.inline_keyboard[0][0] = {
-            text: 'Отключить уведомления',
-            callback_data: `muteMember=${member.id}`
-          }
-          await axios.post(`${TG_API}/editMessageText`, {
-            chat_id,
-            message_id: cq.message.message_id,
-            reply_markup,
-          });
         }
       }
 
