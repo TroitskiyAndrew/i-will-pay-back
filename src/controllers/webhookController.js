@@ -1,5 +1,6 @@
 const dataService = require("../services/mongodb");
 const sharesService = require("../services/sharesService");
+const roomsService = require("../services/roomsService");
 const membersService = require("../services/membersService");
 const config = require("../config/config");
 const axios = require("axios");
@@ -10,7 +11,7 @@ const handleWebhook = async (req, res) => {
   try {
     const update = req.body;
 
-    if(update._sendMessage){
+    if (update._sendMessage) {
       res.json({ ok: true });
       console.log(req.body)
       sendMessage(req.body.chat_id, req.body.text, req.body.reply_markup)
@@ -97,7 +98,7 @@ const handleWebhook = async (req, res) => {
       });
 
 
-    } 
+    }
     const message = update.message
     if (message && message.text === "/start") {
       await fetch(`${config.tgApiUrl}/sendMessage`, {
@@ -121,51 +122,53 @@ const handleWebhook = async (req, res) => {
 
     }
     console.log(update)
-    // if (message && message.new_chat_member && message.new_chat_member.id === 8420107013) {
-    //   const chat = message.chat;  
-    //   if (chat.type.endsWith("group")) {
-    //     console.log('__________________sendMessage', chat.id)
-    //     setTimeout(async () => {
-    //       await fetch(`${config.tgApiUrl}/sendMessage`, {
-    //         method: "POST",
-    //         headers: { "Content-Type": "application/json" },
-    //         body: JSON.stringify({
-    //           chat_id: chat.id,
-    //           text: "Добро пожаловать!",
-    //           reply_markup: {
-    //             inline_keyboard: [
-    //               [
-    //                 {
-    //                   text: "Открыть приложение",
-    //                   web_app: { url: "https://i-will-pay-front.vercel.app" }
-    //                 }
-    //               ]
-    //             ]
-    //           }
-    //         })
-    //       });
-
-    //     }, 1000);
-    //     await fetch(`${config.tgApiUrl}/sendMessage`, {
-    //       method: "POST",
-    //       headers: { "Content-Type": "application/json" },
-    //       body: JSON.stringify({
-    //         chat_id: chat.id,
-    //         text: "Добро пожаловать!",
-    //         reply_markup: {
-    //           inline_keyboard: [
-    //             [
-    //               {
-    //                 text: "Открыть приложение",
-    //                 web_app: { url: "https://i-will-pay-front.vercel.app" }
-    //               }
-    //             ]
-    //           ]
-    //         }
-    //       })
-    //     });
-    //   }
-    // }
+    if (message && message.new_chat_member && message.new_chat_member.id === 8420107013) {
+      const chat = message.chat;
+      if (chat.type.endsWith("group")) {
+        let userFinal = null;
+        userFinal = await dataService.getDocumentByQuery("users", { telegramId: message.from.id });
+        if (!userFinal) {
+          userFinal = await dataService.createDocument("users", { telegramId: message.from.id, name: message.from.username || message.from.first_name })
+        }
+        let room = await dataService.getDocumentByQuery("rooms", { chatId: chat.id })
+        if (!room) {
+          room = await roomsService.createRoom({ chatId: chat.id, name: chat.title }, { userId: userFinal.id, name: userFinal.name, payer: userFinal.id })
+        } else {
+          const member = await dataService.getDocumentByQuery("members", { userId: userFinal.id, roomId: room.id });
+          if (!member) {
+            await membersService.createMember({
+              userId: userFinal.id,
+              roomId: room.id,
+              name: userFinal.name,
+              isAdmin: false,
+              grantedBy: null,
+              isGuest: false,
+              payer: userFinal.id
+            })
+          } else if (member.isGuest) {
+            await dataService.updateDocument("members", { ...member, isGuest: false })
+          }
+        }
+        await fetch(`${config.tgApiUrl}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chat.id,
+            text: "Добро пожаловать!",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Открыть приложение",
+                    url: `https://t.me/I_WillPay_bot?startapp=roomId=${room.id}`
+                  }
+                ]
+              ]
+            }
+          })
+        });
+      }
+    }
 
     res.json({ ok: true });
   } catch (error) {
