@@ -111,6 +111,31 @@ const handleWebhook = async (req, res) => {
       });
 
     }
+    if (update.my_chat_member) {
+      const chat = update.my_chat_member.chat;
+      const newStatus = update.my_chat_member.new_chat_member.status;
+  
+      if (chat.type.endsWith("group") && newStatus === "member") {
+        await fetch(`${config.tgApiUrl}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: update.message.chat.id,
+            text: "Добро пожаловать!",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Открыть приложение",
+                    web_app: { url: "https://i-will-pay-front.vercel.app" }
+                  }
+                ]
+              ]
+            }
+          })
+        });
+      }
+    }
 
     res.json({ ok: true });
   } catch (error) {
