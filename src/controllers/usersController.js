@@ -77,7 +77,7 @@ const auth = async (req, res) => {
       userFinal = await dataService.createDocument("users", { telegramId: user.id, name: user.username || user.first_name })
     }
     let roomId = null;
-    console.log('___chat')
+    console.log('___chat', chat)
     if (chat) {
       let room = await dataService.getDocumentByQuery("rooms", { chatId: chat.id })
       if (!room) {
