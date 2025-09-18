@@ -8,7 +8,7 @@ const { ObjectId } = require("mongodb");
 const handleWebhook = async (req, res) => {
   try {
     const update = req.body;
-
+    console.log(update)
     if (update.callback_query) {
       const cq = update.callback_query;
       const data = cq.data;
@@ -89,7 +89,8 @@ const handleWebhook = async (req, res) => {
       });
 
 
-    } else if (update.message && update.message.text === "/start") {
+    } 
+    if (update.message && update.message.text === "/start") {
       await fetch(`${TELEGRAM_API}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
