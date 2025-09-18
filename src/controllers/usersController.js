@@ -77,6 +77,7 @@ const auth = async (req, res) => {
       userFinal = await dataService.createDocument("users", { telegramId: user.id, name: user.username || user.first_name })
     }
     let roomId = null;
+    console.log('___chat')
     if (chat) {
       let room = await dataService.getDocumentByQuery("rooms", { chatId: chat.id })
       if (!room) {
@@ -98,9 +99,7 @@ const auth = async (req, res) => {
         }
       }
       roomId = room?.id || null
-    }
-    console.log('_______________________params', params)
-    if (params.roomId) {
+    } else if (params.roomId) {
       let room = await dataService.getDocument("rooms", params.roomId)
       if (room)  {
         const member = await dataService.getDocumentByQuery("members", { userId: userFinal.id, roomId: room.id });
