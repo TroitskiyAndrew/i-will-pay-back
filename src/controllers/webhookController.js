@@ -112,7 +112,7 @@ const handleWebhook = async (req, res) => {
       });
 
     }
-    if (message.new_chat_member && message.new_chat_member.id === 8420107013) {
+    if (message && message.new_chat_member && message.new_chat_member.id === 8420107013) {
       const chat = message.chat;  
       if (chat.type.endsWith("group")) {
         console.log('__________________sendMessage')
