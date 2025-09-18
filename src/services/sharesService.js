@@ -24,7 +24,7 @@ async function senMessageAboutNewShare(userId, payment, newShare) {
     if (user.telegramId && !member.mute && user.id !== payment.payer) {
         let text = `${memberPayer.name} заплатил ${payment.amount}${payment.comment ? '/' + payment.comment : ''}`
         if (newShare.balance > 0) {
-            text += `\nЗа ${member.userId === newShare.userId ? 'вас' : member.name} - ${newShare.balance}`;
+            text += `\nЗа ${member.userId === newShare.userId ? 'меня' : member.name} - ${newShare.balance}`;
         } else {
             text += `\nУкажите, сколько за ${member.userId === newShare.userId ? 'вас' : member.name}`
         }
@@ -73,8 +73,10 @@ async function updateShare(share, currentUserId) {
             share.confirmedByUser = true;
         } else {
             if(storedShare.confirmedByUser === true){
-                await senMessageAboutUpdateShare(share.userId, payment, updated);
-                if(share.userId !== share.payer){
+                if(share.userId !== share.paymentPayer){
+                    await senMessageAboutUpdateShare(share.userId, payment, updated);
+                }
+                if(share.userId !== share.payer && share.payer !== share.paymentPayer){
                     await senMessageAboutUpdateShare(share.payer, payment, updated);
                 }
             }
@@ -94,7 +96,7 @@ async function senMessageAboutUpdateShare(userId, payment, share) {
         let text = `${payment.amount}${payment.comment ? '/' + payment.comment : ''} от ${payment.date}`;
         if(userId === payment.payer){
             text = 'В моем платеже ' + text;
-            text += `\nдоля ${shareMember.name} составляет ${share.balance}`
+            text += `\n${shareMember.userId === userId ? 'моя доля' : 'доля ' + shareMember.name} составляет ${share.balance}`
         } else {
             const paymentMember = await dataService.getDocumentByQuery('members', { userId: payment.payer, roomId: payment.roomId }); 
             text = `В платеже ${paymentMember.name} ` + text;
