@@ -91,7 +91,7 @@ const handleWebhook = async (req, res) => {
 
     } 
     if (update.message && update.message.text === "/start") {
-      await fetch(`${TELEGRAM_API}/sendMessage`, {
+      await fetch(`${config.tgApiUrl}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
