@@ -116,6 +116,7 @@ const handleWebhook = async (req, res) => {
       const newStatus = update.my_chat_member.new_chat_member.status;
   
       if (chat.type.endsWith("group") && newStatus === "member") {
+        console.log('__________________sendMessage')
         await fetch(`${config.tgApiUrl}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
