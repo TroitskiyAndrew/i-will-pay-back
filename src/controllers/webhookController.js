@@ -115,7 +115,7 @@ const handleWebhook = async (req, res) => {
     if (message && message.new_chat_member && message.new_chat_member.id === 8420107013) {
       const chat = message.chat;  
       if (chat.type.endsWith("group")) {
-        console.log('__________________sendMessage')
+        console.log('__________________sendMessage', chat.id)
         setTimeout(async () => {
           await fetch(`${config.tgApiUrl}/sendMessage`, {
             method: "POST",
@@ -136,7 +136,25 @@ const handleWebhook = async (req, res) => {
             })
           });
 
-        })
+        }, 1000);
+        await fetch(`${config.tgApiUrl}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chat.id,
+            text: "Добро пожаловать!",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Открыть приложение",
+                    web_app: { url: "https://i-will-pay-front.vercel.app" }
+                  }
+                ]
+              ]
+            }
+          })
+        });
       }
     }
 
