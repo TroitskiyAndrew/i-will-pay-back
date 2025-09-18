@@ -47,9 +47,7 @@ const telegramInitDataMiddleware = (req, res, next) => {
     }
     const telegramData = parse(raw);
     telegramData.params = (telegramData.start_param || '').split(config.splitParams).reduce((result, param) => {
-      console.log('_____________param', param)
       const [key, value] = param.split('=');
-      console.log('______________key, value',key, value)
       result[key] = value;
       return result;
     } , {}) 

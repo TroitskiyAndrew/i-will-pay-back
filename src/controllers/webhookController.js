@@ -50,9 +50,9 @@ const handleWebhook = async (req, res) => {
       if (action === 'muteMember') {
         const member = await dataService.getDocument("members", value);
         if (!member.mute) {
-          await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: true}})
+          await membersService.updateMembers({ _id: new ObjectId(value) }, { $set: { mute: true } })
         };
-        
+
         reply_markup.inline_keyboard[0][0] = {
           text: 'Включить уведомления',
           callback_data: `unmuteMember=${member.id}`
@@ -68,7 +68,7 @@ const handleWebhook = async (req, res) => {
       if (action === 'unmuteMember') {
         const member = await dataService.getDocument("members", value);
         if (member.mute) {
-          await membersService.updateMembers({_id: new ObjectId(value)}, { $set: { mute: false}})
+          await membersService.updateMembers({ _id: new ObjectId(value) }, { $set: { mute: false } })
         }
         reply_markup.inline_keyboard[0][0] = {
           text: 'Отключить уведомления',
@@ -88,6 +88,26 @@ const handleWebhook = async (req, res) => {
         text: responseText
       });
 
+
+    } else if (update.message && update.message.text === "/start") {
+      await fetch(`${TELEGRAM_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: update.message.chat.id,
+          text: "Добро пожаловать!",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Открыть приложение",
+                  web_app: { url: "https://i-will-pay-front.vercel.app" }
+                }
+              ]
+            ]
+          }
+        })
+      });
 
     }
 
