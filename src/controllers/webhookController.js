@@ -154,12 +154,12 @@ const handleWebhook = async (req, res) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chat.id,
-            text: "Добро пожаловать!",
+            text: `Создана группа\n${room.name}`,
             reply_markup: {
               inline_keyboard: [
                 [
                   {
-                    text: "Открыть приложение",
+                    text: "Присоединиться к группе",
                     url: `https://t.me/I_WillPay_bot?startapp=roomId=${room.id}`
                   }
                 ]
