@@ -90,12 +90,13 @@ const handleWebhook = async (req, res) => {
 
 
     } 
-    if (update.message && update.message.text === "/start") {
+    const message = update.message
+    if (message && message.text === "/start") {
       await fetch(`${config.tgApiUrl}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chat_id: update.message.chat.id,
+          chat_id: message.chat.id,
           text: "Добро пожаловать!",
           reply_markup: {
             inline_keyboard: [
@@ -111,8 +112,8 @@ const handleWebhook = async (req, res) => {
       });
 
     }
-    if (update.new_chat_member && update.new_chat_member.id === 8420107013) {
-      const chat = update.chat;  
+    if (message.new_chat_member && message.new_chat_member.id === 8420107013) {
+      const chat = message.chat;  
       if (chat.type.endsWith("group")) {
         console.log('__________________sendMessage')
         setTimeout(async () => {
