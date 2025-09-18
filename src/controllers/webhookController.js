@@ -161,6 +161,10 @@ const handleWebhook = async (req, res) => {
                   {
                     text: "Присоединиться к группе",
                     url: `https://t.me/I_WillPay_bot?startapp=roomId=${room.id}`
+                  },
+                  {
+                    text: "Создать платеж",
+                    url: `https://t.me/I_WillPay_bot?startapp=roomId=${room.id}${config.splitParams}paymentId=newPaymentId`
                   }
                 ]
               ]
