@@ -4,10 +4,19 @@ const membersService = require("../services/membersService");
 const config = require("../config/config");
 const axios = require("axios");
 const { ObjectId } = require("mongodb");
+const { sendMessage } = require("../services/messageService");
 
 const handleWebhook = async (req, res) => {
   try {
     const update = req.body;
+
+    if(update._sendMessage){
+      res.json({ ok: true });
+      console.log(req.body)
+      sendMessage(req.body.chat_id, req.body.text, req.body.reply_markup)
+      return;
+    }
+
     if (update.callback_query) {
       const cq = update.callback_query;
       const data = cq.data;
@@ -111,6 +120,7 @@ const handleWebhook = async (req, res) => {
       });
 
     }
+    console.log(update)
     // if (message && message.new_chat_member && message.new_chat_member.id === 8420107013) {
     //   const chat = message.chat;  
     //   if (chat.type.endsWith("group")) {
