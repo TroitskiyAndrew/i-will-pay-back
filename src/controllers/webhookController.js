@@ -120,7 +120,7 @@ const handleWebhook = async (req, res) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            chat_id: update.message.chat.id,
+            chat_id: chat.id,
             text: "Добро пожаловать!",
             reply_markup: {
               inline_keyboard: [
