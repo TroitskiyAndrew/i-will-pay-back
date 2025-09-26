@@ -60,7 +60,7 @@ async function updateShare(share, currentUserId) {
     const storedShare = await dataService.getDocument("shares", share.id);
     const payment = await dataService.getDocument("payments", share.paymentId);
     const updated = await dataService.updateDocument("shares", share);
-    if (share.balance !== storedShare) {
+    if (share.balance !== storedShare.balance) {
         if (share.paymentPayer === currentUserId) {
             share.confirmedByPayer = true;
         } else {
